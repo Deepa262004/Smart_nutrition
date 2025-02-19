@@ -6,7 +6,7 @@ export default function Goalscreen() {
     const router = useRouter();
     
     // State for user details and selected goal
-    const [goal, setGoal] = useState('');
+    const [goal, setGoal] = useState('');  
     const [name, setName] = useState('');
     const [age, setAge] = useState('');
     const [height, setHeight] = useState('');
