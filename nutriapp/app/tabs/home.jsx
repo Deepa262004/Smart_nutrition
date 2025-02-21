@@ -14,24 +14,15 @@ const Home = () => {
   useEffect(() => {
     const fetchUserName = async () => {
       try {
-        const token = await AsyncStorage.getItem("token");
-        if (!token) {
-          console.log("No token found");
-          setLoading(false);
-          return;
-        }
-
-        const response = await axios.get("http://127.0.0.1:8001/auth/user/details/", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.status === 200) {
-          setUserName(response.data.username || "Guest");
+        const username = await AsyncStorage.getItem("username"); // Retrieve username from AsyncStorage
+        if (username) {
+          setUserName(username);
         } else {
-          console.log("Error fetching user details: Unexpected response", response);
+          setUserName("Guest");
         }
       } catch (error) {
         console.error("Error fetching user details:", error.message);
+        setUserName("Guest");
       } finally {
         setLoading(false);
       }
@@ -39,6 +30,7 @@ const Home = () => {
 
     fetchUserName();
   }, []);
+
 
   return (
     <ScrollView style={styles.container}>

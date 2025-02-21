@@ -1,18 +1,35 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 
 export default function loginscreen() {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleLogin = () => {
-        // Add authentication logic here
-        console.log('Logging in with:', email, password);
-        router.push('/tabs/home');
-
+    
+    const handleLogin = async () => {
+      try {
+        const response = await axios.post("http://127.0.0.1:8001/auth/login/", {
+          email,
+          password,
+        });
+    
+        if (response.status === 200) {
+          const { token, username } = response.data;
+          await AsyncStorage.setItem("token", token);
+          await AsyncStorage.setItem("username", username); // Store username
+          console.log("Login successful");
+        
+          navigation.navigate("/tabs/home");
+        }
+      } catch (error) {
+        console.error("Login failed:", error.message);
+      }
     };
+    
 
     return (
         <View style={styles.container}>
