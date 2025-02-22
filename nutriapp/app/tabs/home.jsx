@@ -94,7 +94,7 @@ const Home = () => {
 
       {/* Plan Your Meal Button */}
       <View style={styles.card}>
-        <TouchableOpacity style={styles.planMealButton} onPress={() => navigation.navigate("auth/mealrecomdation")}>
+        <TouchableOpacity style={styles.planMealButton} onPress={() => navigation.navigate("/auth/mealrecomdation")}>
           <Text style={styles.planMealButtonText}>Plan Your Meal</Text>
         </TouchableOpacity>
       </View>
