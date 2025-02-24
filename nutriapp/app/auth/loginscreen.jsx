@@ -22,6 +22,7 @@ export default function loginscreen() {
           await AsyncStorage.setItem("token", token);
           await AsyncStorage.setItem("username", username); // Store username
           console.log("Login successful");
+          console.log(email,password)
         
           navigation.navigate("/tabs/home");
         }

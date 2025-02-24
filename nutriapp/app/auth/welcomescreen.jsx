@@ -14,13 +14,8 @@ export default function welcomescreen() {
 
             {/* Welcome Text */}
             <Text style={styles.title}>Hi there!</Text>
-            <Text style={styles.subtitle}>Welcome to NutriApp!</Text>
+            <Text style={styles.subtitle}>Welcome to Smart Nutrition</Text>
 
-            {/* Rating Section */}
-            <View style={styles.ratingContainer}>
-                <Text style={styles.ratingText}>⭐ 4.8</Text>
-                <Text style={styles.appStoreText}>App Store</Text>
-            </View>
 
             {/* Get Started Button */}
             <TouchableOpacity style={styles.button} onPress={() => router.push("auth/goalscreen")}>
@@ -54,7 +49,7 @@ const styles = StyleSheet.create({
         marginBottom: 50,
     },
     title: {
-        fontSize: 50,
+        fontSize: 40,
         fontWeight: "bold",
         color: "#000",
     },
