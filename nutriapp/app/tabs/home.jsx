@@ -1,44 +1,17 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle } from "react-native-svg";
-import React, { useEffect, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 
 const Home = () => {
   const navigation = useNavigation();
-  const [userName, setUserName] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchUserName = async () => {
-      try {
-        const username = await AsyncStorage.getItem("username"); // Retrieve username from AsyncStorage
-        if (username) {
-          setUserName(username);
-        } else {
-          setUserName("Guest");
-        }
-      } catch (error) {
-        console.error("Error fetching user details:", error.message);
-        setUserName("Guest");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserName();
-  }, []);
-
 
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.greeting}>
-          {loading ? "Loading..." : `Hey ${userName}`}
-        </Text>
+        <Text style={styles.greeting}>Hey, Safayet</Text>
         <Text style={styles.subText}>Have a refreshing evening!</Text>
         <TouchableOpacity style={styles.settingsButton}>
           <Ionicons name="settings-outline" size={24} color="white" />
@@ -53,7 +26,7 @@ const Home = () => {
             { title: "Protein", value: "50g", color: "#FF5733" },
             { title: "Carbs", value: "200g", color: "#33C1FF" },
             { title: "Fibre", value: "30g", color: "#2E8B57" },
-            { title: "Fat", value: "70g", color: "#FFC133" },
+            { title: "Fat", value: "70g", color: "#FFC133" }
           ].map((item, index) => (
             <View key={index} style={[styles.nutritionCard, { borderColor: item.color }]}>
               <View style={[styles.nutritionCircle, { backgroundColor: item.color }]}>
@@ -82,22 +55,44 @@ const Home = () => {
 
       {/* Glucose & Weight Charts */}
       <View style={styles.row}>
+        {/* Glucose Card */}
         <View style={styles.chartCard}>
-          <Text style={styles.cardTitle}>Glucose</Text>
-          <Text style={styles.noData}>No data</Text>
+          <Text style={styles.cardTitle}>Glucose Level</Text>
+          <Text style={styles.glucoseValue}>98 mg/dL</Text>
+          <Text style={styles.glucoseStatus}>Normal</Text>
         </View>
+        
+        {/* Weight Card */}
         <View style={styles.chartCard}>
           <Text style={styles.cardTitle}>Weight</Text>
           <Text style={styles.weightText}>90 kg</Text>
         </View>
       </View>
 
+      {/* Meal Recommendations */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Recommended Meals</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {[
+            { title: "Grilled Salmon", image: require("../../assets/salmon.jpg") },
+            { title: "Avocado Salad", image: require("../../assets/salad.jpg") },
+            { title: "Oatmeal Bowl", image: require("../../assets/oatsmeal.jpg") } // Updated filename
+          ].map((meal, index) => (
+            <View key={index} style={styles.mealCard}>
+              <Image source={meal.image} style={styles.mealImage} />
+              <Text style={styles.mealTitle}>{meal.title}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+
       {/* Plan Your Meal Button */}
       <View style={styles.card}>
-        <TouchableOpacity style={styles.planMealButton} onPress={() => navigation.navigate("/auth/mealrecomdation")}>
+        <TouchableOpacity style={styles.planMealButton} onPress={() => navigation.navigate("auth/mealrecommendation")}>
           <Text style={styles.planMealButtonText}>Plan Your Meal</Text>
         </TouchableOpacity>
       </View>
+      
     </ScrollView>
   );
 };
@@ -109,23 +104,33 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 22, fontWeight: "bold", color: "white" },
   subText: { fontSize: 14, color: "white" },
   settingsButton: { position: "absolute", right: 15, top: 20 },
+  
   card: { backgroundColor: "white", padding: 16, borderRadius: 10, marginTop: 15 },
   cardTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
+  
   nutritionContainer: { flexDirection: "row", justifyContent: "space-between", marginTop: 10 },
   nutritionCard: { flex: 0.23, paddingVertical: 15, paddingHorizontal: 10, borderWidth: 2, borderRadius: 12, alignItems: "center", backgroundColor: "white", elevation: 4 },
   nutritionCircle: { width: 50, height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center", marginBottom: 8 },
   nutritionText: { fontSize: 14, fontWeight: "bold", color: "#333" },
   nutritionValue: { fontSize: 16, fontWeight: "bold", color: "white" },
+
   calorieTracker: { flexDirection: "row", alignItems: "center", justifyContent: "center", position: "relative" },
   calorieText: { position: "absolute", alignItems: "center" },
   caloriesLeft: { fontSize: 24, fontWeight: "bold" },
   calorieSubText: { fontSize: 12, color: "gray" },
+
   row: { flexDirection: "row", justifyContent: "space-between", marginTop: 15 },
   chartCard: { backgroundColor: "white", flex: 0.48, padding: 16, borderRadius: 10, alignItems: "center" },
-  noData: { textAlign: "center", color: "gray" },
-  weightText: { textAlign: "center", fontSize: 18, fontWeight: "bold" },
+  glucoseValue: { fontSize: 20, fontWeight: "bold", color: "#2E8B57" },
+  glucoseStatus: { fontSize: 14, color: "gray" },
+  weightText: { fontSize: 18, fontWeight: "bold" },
+
+  mealCard: { alignItems: "center", marginRight: 15 },
+  mealImage: { width: 100, height: 100, borderRadius: 10 },
+  mealTitle: { fontSize: 14, fontWeight: "bold", marginTop: 5 },
+
   planMealButton: { backgroundColor: "#50C878", paddingVertical: 15, paddingHorizontal: 30, borderRadius: 10, alignItems: "center" },
-  planMealButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
+  planMealButtonText: { color: "white", fontSize: 16, fontWeight: "bold" }
 });
 
 export default Home;
