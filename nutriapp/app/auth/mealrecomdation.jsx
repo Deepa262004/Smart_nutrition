@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 
-const mealrecommendation = () => {
+const mealrecomdation = () => {
     const [formData, setFormData] = useState({
         dietPreference: '',
         dislikedFoods: '',
@@ -112,4 +112,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default mealrecommendation;
+export default mealrecomdation;

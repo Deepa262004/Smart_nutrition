@@ -139,14 +139,29 @@ def login_view(request):
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])  # Only logged-in users can update profiles
+@permission_classes([IsAuthenticated])
 def profile_setup(request):
     """API to handle user profile setup."""
-    serializer = UserProfileSerializer(data=request.data, context={'request': request})
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "Profile setup successful", "profile": serializer.data}, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    user = request.user
+
+    try:
+        # Check if profile exists or create a new one
+        user_profile, created = UserProfile.objects.get_or_create(user=user)
+
+        # Update fields from request data
+        user_profile.goal = request.data.get('goal', user_profile.goal)
+        user_profile.name = request.data.get('name', user_profile.name)
+        user_profile.age = request.data.get('age', user_profile.age)
+        user_profile.height = request.data.get('height', user_profile.height)
+        user_profile.insulin = request.data.get('insulin', user_profile.insulin)
+        user_profile.weight = request.data.get('weight', user_profile.weight)
+
+        user_profile.save()
+
+        return Response({"message": "Profile updated successfully!"}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])  # Ensure only authenticated users can access
