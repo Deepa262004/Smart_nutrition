@@ -26,7 +26,7 @@ export default function SignUpScreen() {
 
         try {
             console.log("Sending request to API...");
-            const response = await axios.post("http://192.0.0.4:8081/auth/signup/", {
+            const response = await axios.post("http://192.168.159.25:8081/auth/signup/", {
                 username: email.split("@")[0],
                 email,
                 password,
