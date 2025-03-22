@@ -12,7 +12,7 @@ export default function loginscreen() {
     
     const handleLogin = async () => {
       try {
-        const response = await axios.post("http://192.168.43.242:8001/auth/login/", {
+        const response = await axios.post("http://127.0.0.1:8001/auth/login/", {
           email,
           password,
         });
