@@ -24,9 +24,14 @@ diabetes_model = joblib.load(r"authapp/data/diabetes_model (1).pkl")
 cardio_model = joblib.load(r"authapp/data/cardio_model (1).pkl")
 
 # Load Recipes Data
-recipes_df = pd.read_csv(r"authapp/data/final_rexipe(in) (1).csv")
+recipes_df = pd.read_csv(r"authapp/data/final_rexipe(in) (1) (2).csv")
 recipes_df['Diet'] = recipes_df['Diet'].str.strip().str.lower()
 
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+import pandas as pd
 
 @api_view(['POST'])
 def predict_diet(request):
@@ -34,30 +39,49 @@ def predict_diet(request):
     serializer = UserProfileSerializer(data=request.data)
     if serializer.is_valid():
         user_profile = serializer.validated_data
-        glucose = user_profile['daily_insulin_level'] or 0
-        bmi = user_profile['weight'] / ((user_profile['height'] / 100) ** 2)
-        age = user_profile['age']
+        
+        # Handle missing values safely
+        glucose = user_profile.get('daily_insulin_level', 0)
+        weight = user_profile.get('weight', 0)
+        height = user_profile.get('height', 1)  # Avoid division by zero
+        bmi = weight / ((height / 100) ** 2)
+        age = user_profile.get('age', 0)
         systolic_bp = user_profile.get('systolic_bp', 0)
         diastolic_bp = user_profile.get('diastolic_bp', 0)
         cholesterol = user_profile.get('cholesterol', 0)
-        gender = 1 if user_profile['gender'].lower() == 'male' else 0
+        gender = 1 if(user_profile.get('gender', '').lower() == 'male'  or  user_profile.get('gender', '').lower() == 'female') else 0
+        family_history = user_profile.get('family_history', '').lower()
+        health_condition_preferences = user_profile.get('health_condition_preferences', '').lower()
+        dietary_preferences = user_profile.get('dietary_preferences', '').lower()
 
-        # Prepare input data
+        # Prepare input data for prediction
         input_data = pd.DataFrame([[glucose, bmi, systolic_bp, diastolic_bp, cholesterol, age, gender]],
                                   columns=['Glucose', 'BMI', 'Systolic_BP', 'Diastolic_BP', 'cholesterol', 'Age', 'gender'])
-        
-        # Model predictions
-        predicted_outcome = diabetes_model.predict(input_data)[0]
-        predicted_cardio = cardio_model.predict(input_data)[0]
 
-        # Determine conditions
-        is_diabetic = predicted_outcome == 1 or user_profile['family_history'].lower() == 'diabetic' or user_profile['health_condition_preferences'].lower() in ['diabetes', 'both']
-        has_cardio = predicted_cardio == 1 or user_profile['health_condition_preferences'].lower() in ['cardiovascular', 'both']
+        try:
+            predicted_outcome = diabetes_model.predict(input_data)[0]
+            predicted_cardio = cardio_model.predict(input_data)[0]
+        except Exception as e:
+            return Response({"error": f"Model prediction error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Determine health conditions
+        is_diabetic = (predicted_outcome == 1) or (family_history == 'diabetic') or (health_condition_preferences in ['diabetes', 'both'])
+        has_cardio = (predicted_cardio == 1) or (health_condition_preferences in ['cardiovascular', 'both'])
 
         # Filter and recommend recipes
-        dietary_preferences = user_profile['dietary_preferences'].lower()
-        recommended_recipes = recipes_df[recipes_df['Diet'] == dietary_preferences]
-        recommended_recipes = recommended_recipes[['RecipeName', 'TotalTimeInMins', 'Diet']].head(12).to_dict('records')
+        if dietary_preferences:
+            recommended_recipes = recipes_df[recipes_df['Diet'].str.lower() == dietary_preferences]
+        else:
+            recommended_recipes = recipes_df  # Default to all recipes if no preference is provided
+
+        # Adjust recipes for health conditions
+        if is_diabetic:
+            recommended_recipes = recommended_recipes[~recommended_recipes['RecipeName'].str.contains("sugar", case=False, na=False)]
+        if has_cardio:
+            recommended_recipes = recommended_recipes[~recommended_recipes['RecipeName'].str.contains("fried", case=False, na=False)]
+
+        # Select top 12 recommendations
+        recommended_recipes = recommended_recipes[['RecipeName', 'TotalTimeInMins', 'Diet', 'TranslatedInstructions']].head(5).to_dict('records')
 
         return Response({
             'recipes': recommended_recipes, 
@@ -66,6 +90,7 @@ def predict_diet(request):
         }, status=status.HTTP_200_OK)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 @api_view(["POST"])
@@ -173,3 +198,32 @@ def get_user_profile(request):
         return Response(serializer.data, status=status.HTTP_200_OK)
     except UserProfile.DoesNotExist:
         return Response({"message": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+
+API_KEY= '80f8317fe9164e8a9951298d3009ff2e'
+from django.views.decorators.csrf import csrf_exempt
+import requests
+from django.http import JsonResponse
+
+def get_ingredient_substitutes(ingredient_name):
+    url = f"https://api.spoonacular.com/food/ingredients/substitutes?ingredientName={ingredient_name}&apiKey={API_KEY}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    return {"error": "Failed to fetch substitutes"}
+
+
+@csrf_exempt
+def ingredient_substitute_view(request):
+    if request.method == "GET":
+        ingredient_name = request.GET.get("ingredient", "")
+        if not ingredient_name:
+            return JsonResponse({"error": "Ingredient name is required"}, status=400)
+        
+        substitutes = get_ingredient_substitutes(ingredient_name)
+        return JsonResponse(substitutes)
+    
+    return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+

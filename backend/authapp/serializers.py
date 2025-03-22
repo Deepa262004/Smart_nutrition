@@ -18,22 +18,57 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 
+from rest_framework import serializers
+from .models import UserProfile
+
+from rest_framework import serializers
+from .models import UserProfile
+
 class UserProfileSerializer(serializers.ModelSerializer):
     """Serializer for storing user health details."""
-    
+
     class Meta:
         model = UserProfile
         fields = [
-            'age', 'weight', 'height', 'daily_insulin_level', 
-            'physical_activity', 'health_condition_preferences', 
-            'dietary_preferences', 'family_history', 'gender'
+            'name', 'goal', 'age', 'height', 'weight', 'gender', 
+            'has_diabetes', 'insulin', 'physical_activity', 
+            'dietary_preference', 'family_history'
         ]
+
+    def validate_gender(self, value):
+        """Normalize gender input and validate choices."""
+        valid_choices = ['male', 'female']
+        value = value.lower()
+        if value not in valid_choices:
+            raise serializers.ValidationError(f"Invalid gender. Choose from {valid_choices}.")
+        return value
+
+    def validate_physical_activity(self, value):
+        """Normalize physical activity input and validate choices."""
+        valid_choices = ['low', 'medium', 'high']
+        value = value.lower()
+        if value not in valid_choices:
+            raise serializers.ValidationError(f"Invalid physical activity level. Choose from {valid_choices}.")
+        return value
+
+    def validate(self, data):
+        """Ensure insulin value is provided only if the user has diabetes."""
+        if data.get('has_diabetes') and data.get('insulin') is None:
+            raise serializers.ValidationError({"insulin": "This field is required for users with diabetes."})
+        return data
 
     def create(self, validated_data):
         """Create user profile linked to the authenticated user."""
         user = self.context['request'].user
         profile, created = UserProfile.objects.update_or_create(user=user, defaults=validated_data)
         return profile
+
+    def update(self, instance, validated_data):
+        """Update user profile details."""
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
 
 
 class FullUserSerializer(serializers.ModelSerializer):

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 
@@ -7,14 +7,16 @@ const Profile = () => {
   const navigation = useNavigation();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [calculatedData, setCalculatedData] = useState({});
 
-  // Load user details from AsyncStorage
   useEffect(() => {
     const loadUserData = async () => {
       try {
         const storedData = await AsyncStorage.getItem("userProfile");
         if (storedData) {
-          setUserData(JSON.parse(storedData));
+          const parsedData = JSON.parse(storedData);
+          setUserData(parsedData);
+          calculateNutrition(parsedData);
         }
       } catch (error) {
         console.error("Error loading user data:", error);
@@ -25,6 +27,39 @@ const Profile = () => {
 
     loadUserData();
   }, []);
+
+  const calculateNutrition = (data) => {
+    if (!data || !data.height || !data.weight || !data.age || !data.gender) return;
+
+    const { height, weight, age, gender, activityLevel } = data;
+
+    // Mifflin-St Jeor Equation
+    let BMR = gender === "male"
+      ? (10 * weight) + (6.25 * height) - (5 * age) + 5
+      : (10 * weight) + (6.25 * height) - (5 * age) - 161;
+
+    // Adjust for activity level
+    const activityMultiplier = {
+      sedentary: 1.2,
+      light: 1.375,
+      moderate: 1.55,
+      active: 1.725
+    };
+
+    const TDEE = BMR * (activityMultiplier[activityLevel] || 1.2);
+
+    // Macronutrient Breakdown
+    const carbs = (TDEE * 0.5) / 4;   // 50% from carbs (4 kcal/g)
+    const protein = (TDEE * 0.3) / 4; // 30% from protein (4 kcal/g)
+    const fat = (TDEE * 0.2) / 9;     // 20% from fat (9 kcal/g)
+
+    setCalculatedData({
+      calories: Math.round(TDEE),
+      carbs: Math.round(carbs),
+      protein: Math.round(protein),
+      fat: Math.round(fat),
+    });
+  };
 
   if (loading) {
     return (
@@ -52,9 +87,9 @@ const Profile = () => {
     <ScrollView style={styles.container}>
       {/* Profile Header */}
       <View style={styles.profileHeader}>
-        {/* <Image source={{ uri: "https://via.placeholder.com/100" }} style={styles.profileImage} /> */}
         <Text style={styles.userName}>{userData.name || "User"}</Text>
         <Text style={styles.userDetails}>Age: {userData.age || "N/A"}</Text>
+        <Text style={styles.userDetails}>Height: {userData.height} cm | Weight: {userData.weight} kg</Text>
       </View>
 
       {/* Health Goals */}
@@ -63,25 +98,28 @@ const Profile = () => {
         <Text style={styles.goalItem}>✅ {userData.goal || "No goal set"}</Text>
       </View>
 
-      {/* Nutrition Summary */}
+      {/* Daily Nutrition Summary */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Daily Nutrition Summary</Text>
         <View style={styles.nutritionRow}>
-          <Text style={styles.nutritionItem}>Calories: {userData.calories || "1800"} kcal</Text>
-          <Text style={styles.nutritionItem}>Carbs: {userData.carbs || "120g"}</Text>
-          <Text style={styles.nutritionItem}>Protein: {userData.protein || "90g"}</Text>
-          <Text style={styles.nutritionItem}>Fat: {userData.fat || "50g"}</Text>
+          <Text style={styles.nutritionItem}>Calories: {calculatedData.calories || "N/A"} kcal</Text>
+          <Text style={styles.nutritionItem}>Carbs: {calculatedData.carbs || "N/A"}g</Text>
+          <Text style={styles.nutritionItem}>Protein: {calculatedData.protein || "N/A"}g</Text>
+          <Text style={styles.nutritionItem}>Fat: {calculatedData.fat || "N/A"}g</Text>
         </View>
       </View>
-
+<View>
       {/* Meal History */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Meal History</Text>
-        <Text style={styles.mealItem}>🍲 Breakfast: {userData.breakfast || "Not recorded"}</Text>
-        <Text style={styles.mealItem}>🥗 Lunch: {userData.lunch || "Not recorded"}</Text>
-        <Text style={styles.mealItem}>🍎 Snack: {userData.snack || "Not recorded"}</Text>
-      </View>
-
+      <Text style={styles.mealItem}>
+  🍲 Breakfast: {userData.breakfast?.RecipeName || "Not recorded"}
+</Text>
+<Text style={styles.mealItem}>
+  🥗 Lunch: {userData.lunch?.RecipeName || "Not recorded"}
+</Text>
+<Text style={styles.mealItem}>
+  🍎 Snack: {userData.snack?.RecipeName || "Not recorded"}
+</Text>
+</View>
       {/* Edit Profile Button */}
       <TouchableOpacity
         style={styles.editButton}
@@ -97,7 +135,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5", padding: 16 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   profileHeader: { alignItems: "center", marginBottom: 20 },
-  profileImage: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
   userName: { fontSize: 20, fontWeight: "bold" },
   userDetails: { fontSize: 14, color: "gray" },
 

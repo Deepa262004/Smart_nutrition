@@ -17,19 +17,37 @@ class CustomUser(AbstractUser):
         return self.username
 
 
-from django.db import models
+
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
-    goal = models.CharField(max_length=255, blank=True, null=True)
-    name = models.CharField(max_length=255, blank=True, null=True)
-    age = models.IntegerField(blank=True, null=True)
-    height = models.FloatField(blank=True, null=True)
-    insulin = models.FloatField(blank=True, null=True)
-    weight = models.FloatField(blank=True, null=True)
+
+    GENDER_CHOICES = [
+        ('male', 'Male'),
+        ('female', 'Female')
+    ]
+
+    PHYSICAL_ACTIVITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High')
+    ]
+
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES,default="other")
+    physical_activity = models.CharField(max_length=10, choices=PHYSICAL_ACTIVITY_CHOICES,default='low')
+
+    name = models.CharField(max_length=100,default="guest")
+    goal = models.CharField(max_length=255,default="None")
+    age = models.IntegerField(default=25)  # You can change 25 to any appropriate default value
+    height = models.FloatField(default=150)
+    weight = models.FloatField(default=55)
+    has_diabetes = models.BooleanField(default=False)
+    insulin = models.FloatField(null=True, blank=True)
+    # physical_activity = models.CharField(max_length=20, choices=[('Low', 'low'), ('Moderate', 'moderate'), ('Active', 'Active')], default='Low' )
+    dietary_preference = models.CharField(max_length=255, blank=True, null=True)
+    family_history = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return self.user.username
+        return self.name

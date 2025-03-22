@@ -1,55 +1,48 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import Picker  from '@react-native-picker/picker'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 
 export default function Goalscreen() {
     const router = useRouter();
 
-    // State for user details and selected goal
+    // State for user details
     const [goal, setGoal] = useState('');
     const [name, setName] = useState('');
     const [age, setAge] = useState('');
     const [height, setHeight] = useState('');
-    const [insulin, setInsulin] = useState('');
     const [weight, setWeight] = useState('');
-
-    // Load user details from AsyncStorage
-    // useEffect(() => {
-    //     const loadUserData = async () => {
-    //         try {
-    //             const storedName = await AsyncStorage.getItem('userName');
-    //             if (storedName) {
-    //                 setName(storedName); // Set pre-filled name
-    //             }
-    //         } catch (error) {
-    //             console.error('Error loading user data:', error);
-    //         }
-    //     };
-    //     loadUserData();
-    // }, []);
+    const [gender, setGender] = useState('');
+    const [hasDiabetes, setHasDiabetes] = useState(false);
+    const [insulin, setInsulin] = useState('');
+    const [activityLevel, setActivityLevel] = useState('');
+    const [dietaryPreference, setDietaryPreference] = useState('');
+    const [familyHistory, setFamilyHistory] = useState('');
 
     // Handle form submission
     const handleOptionPress = async () => {
-        if (!goal || !age || !height || !insulin || !weight) {
-            alert('Please fill in all details!');
+        if (!goal || !age || !height || !weight || !gender || !activityLevel) {
+            alert('Please fill in all required details!');
             return;
         }
 
-        // Save user details in AsyncStorage (or send to an API)
         try {
             await AsyncStorage.setItem('userProfile', JSON.stringify({
                 name,
                 goal,
                 age,
                 height,
-                insulin,
                 weight,
+                gender,
+                hasDiabetes,
+                insulin: hasDiabetes ? insulin : null,
+                activityLevel,
+                dietaryPreference,
+                familyHistory,
             }));
             alert('Profile updated successfully!');
-
-            // Navigate to the login page or dashboard
-            router.push('/auth/loginscreen');  // Change this to your actual dashboard route
+            router.push('/auth/loginscreen');
         } catch (error) {
             console.error('Error saving user profile:', error);
         }
@@ -58,53 +51,50 @@ export default function Goalscreen() {
     return (
         <View style={styles.container}>
             <Text style={styles.title}>What's your main goal?</Text>
+            <TextInput style={styles.input} placeholder="Enter your goal" value={goal} onChangeText={setGoal} />
+            <TextInput style={styles.input} placeholder="Enter your name" value={name} onChangeText={setName} />
+            <TextInput style={styles.input} placeholder="Enter your age" value={age} keyboardType="numeric" onChangeText={setAge} />
+            <TextInput style={styles.input} placeholder="Enter your height (cm)" value={height} keyboardType="numeric" onChangeText={setHeight} />
+            <TextInput style={styles.input} placeholder="Enter your weight (kg)" value={weight} keyboardType="numeric" onChangeText={setWeight} />
 
-            <TextInput
-                style={styles.input}
-                placeholder="Enter your goal"
-                value={goal}
-                onChangeText={setGoal}
-            />
+            {/* Gender Selection */}
+            <Text style={styles.label}>Select Gender</Text>
+            <Picker selectedValue={gender} style={styles.input} onValueChange={setGender}>
+                <Picker.Item label="Select Gender" value="" />
+                <Picker.Item label="Male" value="male" />
+                <Picker.Item label="Female" value="female" />
+                <Picker.Item label="Other" value="other" />
+            </Picker>
 
-          
-<TextInput
-                style={styles.input}
-                placeholder="Enter your name"
-                value={name}
-                onChangeText={setName}
-            />
+            {/* Diabetes Question */}
+            <Text style={styles.label}>Do you have diabetes?</Text>
+            <View style={styles.toggleContainer}>
+                <TouchableOpacity style={[styles.toggleButton, hasDiabetes && styles.selected]} onPress={() => setHasDiabetes(true)}>
+                    <Text style={styles.toggleText}>Yes</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.toggleButton, !hasDiabetes && styles.selected]} onPress={() => setHasDiabetes(false)}>
+                    <Text style={styles.toggleText}>No</Text>
+                </TouchableOpacity>
+            </View>
 
-            <TextInput
-                style={styles.input}
-                placeholder="Enter your age"
-                value={age}
-                keyboardType="numeric"
-                onChangeText={setAge}
-            />
+            {hasDiabetes && (
+                <TextInput style={styles.input} placeholder="Enter your insulin (units)" value={insulin} keyboardType="numeric" onChangeText={setInsulin} />
+            )}
 
-            <TextInput
-                style={styles.input}
-                placeholder="Enter your height (cm)"
-                value={height}
-                keyboardType="numeric"
-                onChangeText={setHeight}
-            />
+            {/* Physical Activity Level */}
+            <Text style={styles.label}>Physical Activity Level</Text>
+            <Picker selectedValue={activityLevel} style={styles.input} onValueChange={setActivityLevel}>
+                <Picker.Item label="Select Activity Level" value="" />
+                <Picker.Item label="Low" value="low" />
+                <Picker.Item label="Moderate" value="moderate" />
+                <Picker.Item label="Active" value="active" />
+            </Picker>
 
-            <TextInput
-                style={styles.input}
-                placeholder="Enter your insulin (units)"
-                value={insulin}
-                keyboardType="numeric"
-                onChangeText={setInsulin}
-            />
+            {/* Dietary Preference */}
+            <TextInput style={styles.input} placeholder="Any dietary preference?" value={dietaryPreference} onChangeText={setDietaryPreference} />
 
-            <TextInput
-                style={styles.input}
-                placeholder="Enter your weight (kg)"
-                value={weight}
-                keyboardType="numeric"
-                onChangeText={setWeight}
-            />
+            {/* Family History */}
+            <TextInput style={styles.input} placeholder="Family medical history (if any)" value={familyHistory} onChangeText={setFamilyHistory} />
 
             {/* Submit Button */}
             <TouchableOpacity style={styles.option} onPress={handleOptionPress}>
@@ -137,11 +127,30 @@ const styles = StyleSheet.create({
         width: '80%',
         backgroundColor: '#FFF',
     },
-    prefilledText: {
-        fontSize: 18,
+    label: {
+        fontSize: 16,
         fontWeight: 'bold',
-        marginVertical: 10,
-        color: '#333',
+        marginTop: 10,
+    },
+    toggleContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginBottom: 10,
+    },
+    toggleButton: {
+        backgroundColor: '#ccc',
+        paddingVertical: 10,
+        paddingHorizontal: 30,
+        borderRadius: 10,
+        marginHorizontal: 5,
+    },
+    selected: {
+        backgroundColor: '#000',
+    },
+    toggleText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
     option: {
         backgroundColor: '#000',

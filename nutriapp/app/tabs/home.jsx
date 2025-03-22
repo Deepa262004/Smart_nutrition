@@ -1,37 +1,118 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  Modal,
+  Pressable,
+  Dimensions,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import Svg, { Circle } from "react-native-svg";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
+
+const { width } = Dimensions.get("window");
 
 const Home = () => {
   const router = useRouter();
   const [userName, setUserName] = useState("Guest");
   const [loading, setLoading] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState(null);
+  const [weight, setWeight] = useState(70); // Default weight in kg
+  const [height, setHeight] = useState(170); // Default height in cm
+  const [bmi, setBmi] = useState(0);
+  const [calorieRequirement, setCalorieRequirement] = useState(2000);
+  const [bodyFat, setBodyFat] = useState(20); // Body fat percentage
+  const [heartRate, setHeartRate] = useState(72); // Resting heart rate
+  const [bloodPressure, setBloodPressure] = useState("120/80"); // Blood pressure
+  const [steps, setSteps] = useState(5000); // Daily steps
+  const [waterIntake, setWaterIntake] = useState(2); // Liters of water consumed
+
+  // Animation for water intake
+  const waterProgress = useSharedValue(0);
 
   useEffect(() => {
-    const fetchUserName = async () => {
+    waterProgress.value = withTiming((waterIntake / 3) * 100, {
+      duration: 1000,
+      easing: Easing.ease,
+    });
+  }, [waterIntake]);
+
+  const animatedWaterStyle = useAnimatedStyle(() => {
+    return {
+      width: `${waterProgress.value}%`,
+    };
+  });
+
+  useEffect(() => {
+    const fetchUserData = async () => {
       try {
-        const username = await AsyncStorage.getItem("username"); // Retrieve username from AsyncStorage
-        if (username) {
-          setUserName(username);
-        } else {
-          setUserName("Guest");
-        }
+        const username = await AsyncStorage.getItem("username");
+        const userWeight = await AsyncStorage.getItem("weight");
+        const userHeight = await AsyncStorage.getItem("height");
+
+        if (username) setUserName(username);
+        if (userWeight) setWeight(parseFloat(userWeight));
+        if (userHeight) setHeight(parseFloat(userHeight));
+
+        // Calculate BMI
+        const heightInMeters = height / 100;
+        const bmiValue = (weight / (heightInMeters * heightInMeters)).toFixed(1);
+        setBmi(bmiValue);
+
+        // Calculate calorie requirement
+        const calorieReq = (10 * weight + 6.25 * height - 5 * 25 + 5).toFixed(0);
+        setCalorieRequirement(calorieReq);
       } catch (error) {
         console.error("Error fetching user details:", error.message);
-        setUserName("Guest");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserName();
-  }, []);
+    fetchUserData();
+  }, [weight, height]);
 
+  const meals = [
+    {
+      title: "Grilled Salmon",
+      image: require("../../assets/salmon.jpg"),
+      nutrition: "Protein: 25g, Fat: 12g, Carbs: 0g",
+      recipe: "Grill the salmon with olive oil, salt, and pepper for 10 minutes.",
+      calories: 300,
+    },
+    {
+      title: "Avocado Salad",
+      image: require("../../assets/salad.jpg"),
+      nutrition: "Protein: 5g, Fat: 15g, Carbs: 20g",
+      recipe: "Mix chopped avocado, tomatoes, onions, and lemon juice.",
+      calories: 250,
+    },
+    {
+      title: "Oatmeal Bowl",
+      image: require("../../assets/oatsmeal.jpg"),
+      nutrition: "Protein: 10g, Fat: 5g, Carbs: 50g",
+      recipe: "Cook oats with milk, add honey and fruits for sweetness.",
+      calories: 400,
+    },
+  ];
 
+  const getBmiCategory = (bmi) => {
+    if (bmi < 18.5) return "Underweight";
+    if (bmi >= 18.5 && bmi < 24.9) return "Normal";
+    if (bmi >= 25 && bmi < 29.9) return "Overweight";
+    return "Obese";
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -44,52 +125,67 @@ const Home = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Nutrition Section */}
+      {/* Combined BMI and Calorie Requirement */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Nutrition Levels</Text>
-        <View style={styles.nutritionContainer}>
-          {[
-            { title: "Protein", value: "50g", color: "#FF5733" },
-            { title: "Carbs", value: "200g", color: "#33C1FF" },
-            { title: "Fibre", value: "30g", color: "#2E8B57" },
-            { title: "Fat", value: "70g", color: "#FFC133" },
-          ].map((item, index) => (
-            <View key={index} style={[styles.nutritionCard, { borderColor: item.color }]}>
-              <View style={[styles.nutritionCircle, { backgroundColor: item.color }]}>
-                <Text style={styles.nutritionValue}>{item.value}</Text>
-              </View>
-              <Text style={styles.nutritionText}>{item.title}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      {/* Calorie Tracker */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Today's Calories</Text>
-        <View style={styles.calorieTracker}>
-          <Svg width={100} height={100} viewBox="0 0 100 100">
-            <Circle cx="50" cy="50" r="40" stroke="lightgray" strokeWidth="8" fill="none" />
-            <Circle cx="50" cy="50" r="40" stroke="#007bff" strokeWidth="8" fill="none" strokeDasharray="251.2" strokeDashoffset="125.6" />
-          </Svg>
-          <View style={styles.calorieText}>
-            <Text style={styles.caloriesLeft}>1284</Text>
-            <Text style={styles.calorieSubText}>Left</Text>
+        <View style={styles.row}>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricLabel}>BMI</Text>
+            <Text style={styles.metricValue}>{bmi}</Text>
+            <Text style={styles.metricSubText}>({getBmiCategory(bmi)})</Text>
+          </View>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricLabel}>Daily Calories</Text>
+            <Text style={styles.metricValue}>{calorieRequirement}</Text>
+            <Text style={styles.metricSubText}>kcal</Text>
           </View>
         </View>
       </View>
 
-      {/* Glucose & Weight Charts */}
-      <View style={styles.row}>
-        <View style={styles.chartCard}>
-          <Text style={styles.cardTitle}>Glucose Level</Text>
-          <Text style={styles.glucoseValue}>98 mg/dL</Text>
-          <Text style={styles.glucoseStatus}>Normal</Text>
+      {/* Body Composition */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Body Composition</Text>
+        <View style={styles.row}>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricValue}>{bodyFat}%</Text>
+            <Text style={styles.metricLabel}>Body Fat</Text>
+          </View>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricValue}>{waterIntake}L</Text>
+            <Text style={styles.metricLabel}>Water Intake</Text>
+          </View>
         </View>
-        
-        <View style={styles.chartCard}>
-          <Text style={styles.cardTitle}>Weight</Text>
-          <Text style={styles.weightText}>90 kg</Text>
+        {/* Water Intake Animation */}
+        <View style={styles.waterContainer}>
+          <View style={styles.waterBackground}>
+            <Animated.View style={[styles.waterFill, animatedWaterStyle]} />
+          </View>
+          <Text style={styles.waterText}>{waterIntake} / 3L</Text>
+        </View>
+      </View>
+
+      {/* Vital Signs */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Vital Signs</Text>
+        <View style={styles.row}>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricValue}>{heartRate}</Text>
+            <Text style={styles.metricLabel}>Heart Rate</Text>
+          </View>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricValue}>{bloodPressure}</Text>
+            <Text style={styles.metricLabel}>Blood Pressure</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Activity Tracking */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Activity</Text>
+        <View style={styles.row}>
+          <View style={styles.metricCard}>
+            <Text style={styles.metricValue}>{steps}</Text>
+            <Text style={styles.metricLabel}>Steps</Text>
+          </View>
         </View>
       </View>
 
@@ -97,18 +193,44 @@ const Home = () => {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Recommended Meals</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {[
-            { title: "Grilled Salmon", image: require("../../assets/salmon.jpg") },
-            { title: "Avocado Salad", image: require("../../assets/salad.jpg") },
-            { title: "Oatmeal Bowl", image: require("../../assets/oatsmeal.jpg") },
-          ].map((meal, index) => (
-            <View key={index} style={styles.mealCard}>
+          {meals.map((meal, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.mealCard}
+              onPress={() => {
+                setSelectedMeal(meal);
+                setModalVisible(true);
+              }}
+            >
               <Image source={meal.image} style={styles.mealImage} />
               <Text style={styles.mealTitle}>{meal.title}</Text>
-            </View>
+              <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
+            </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
+
+      {/* Meal Details Modal */}
+      <Modal animationType="slide" transparent visible={modalVisible}>
+        <Pressable style={styles.modalContainer} onPress={() => setModalVisible(false)}>
+          <View style={styles.modalContent}>
+            {selectedMeal && (
+              <>
+                <Text style={styles.modalTitle}>{selectedMeal.title}</Text>
+                <Text style={styles.modalText}>{selectedMeal.nutrition}</Text>
+                <Text style={styles.modalText}>{selectedMeal.recipe}</Text>
+                <Text style={styles.modalText}>{selectedMeal.calories} kcal</Text>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </Pressable>
+      </Modal>
 
       {/* Plan Your Meal Button */}
       <View style={styles.card}>
@@ -123,32 +245,90 @@ const Home = () => {
 // Styles
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5", padding: 16 },
-  header: { backgroundColor: "#007bff", padding: 20, borderRadius: 10, position: "relative" },
+  header: {
+    backgroundColor: "#007bff",
+    padding: 20,
+    borderRadius: 10,
+    position: "relative",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
   greeting: { fontSize: 22, fontWeight: "bold", color: "white" },
   subText: { fontSize: 14, color: "white" },
   settingsButton: { position: "absolute", right: 15, top: 20 },
-  
-  card: { backgroundColor: "white", padding: 16, borderRadius: 10, marginTop: 15 },
+
+  card: {
+    backgroundColor: "white",
+    padding: 16,
+    borderRadius: 10,
+    marginTop: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   cardTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
 
-  nutritionContainer: { flexDirection: "row", justifyContent: "space-between", marginTop: 10 },
-  nutritionCard: { flex: 0.23, paddingVertical: 15, paddingHorizontal: 10, borderWidth: 2, borderRadius: 12, alignItems: "center", backgroundColor: "white", elevation: 4 },
-  nutritionCircle: { width: 50, height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center", marginBottom: 8 },
-  nutritionText: { fontSize: 14, fontWeight: "bold", color: "#333" },
-  nutritionValue: { fontSize: 16, fontWeight: "bold", color: "white" },
+  row: { flexDirection: "row", justifyContent: "space-between", marginTop: 10 },
+  metricCard: {
+    flex: 0.48,
+    padding: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    backgroundColor: "#F0F0F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  metricValue: { fontSize: 20, fontWeight: "bold" },
+  metricLabel: { fontSize: 14, color: "gray" },
+  metricSubText: { fontSize: 12, color: "gray" },
 
-  calorieTracker: { flexDirection: "row", alignItems: "center", justifyContent: "center", position: "relative" },
-  calorieText: { position: "absolute", alignItems: "center" },
-  caloriesLeft: { fontSize: 24, fontWeight: "bold" },
-  calorieSubText: { fontSize: 12, color: "gray" },
+  waterContainer: { marginTop: 10, alignItems: "end" },
+  waterBackground: {
+    width: width * 0.45,
+    height: 20,
+    backgroundColor: "#E0E0E0",
 
-  row: { flexDirection: "row", justifyContent: "space-between", marginTop: 15 },
-  chartCard: { backgroundColor: "white", flex: 0.48, padding: 16, borderRadius: 10, alignItems: "center" },
-  glucoseValue: { fontSize: 20, fontWeight: "bold", color: "#2E8B57" },
-  glucoseStatus: { fontSize: 14, color: "gray" },
-  weightText: { fontSize: 18, fontWeight: "bold" },
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  waterFill: {
+    height: "100%",
+    backgroundColor: "#33C1FF",
+    borderRadius: 10,
+  },
+  waterText: { marginTop: 5, fontSize: 14, color: "#333" },
 
-  planMealButton: { backgroundColor: "#50C878", padding: 15, borderRadius: 10, alignItems: "center" },
+  mealCard: { marginRight: 10, alignItems: "center" },
+  mealImage: { width: 100, height: 100, borderRadius: 10 },
+  mealTitle: { marginTop: 5, fontSize: 14, fontWeight: "bold" },
+  mealCalories: { fontSize: 12, color: "gray" },
+
+  modalContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" },
+  modalContent: { backgroundColor: "white", padding: 20, borderRadius: 10, width: 300, alignItems: "center" },
+  modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 10 },
+  modalText: { fontSize: 16, marginBottom: 10, textAlign: "center" },
+  closeButton: { backgroundColor: "#007bff", padding: 10, borderRadius: 5, marginTop: 10 },
+  closeButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
+
+  planMealButton: {
+    backgroundColor: "#50C878",
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
   planMealButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
 });
 
