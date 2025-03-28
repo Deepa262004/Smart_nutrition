@@ -2,12 +2,11 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
-import { useRouter } from "expo-router";
+
 const Profile = () => {
   const navigation = useNavigation();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-   const router = useRouter();
   const [calculatedData, setCalculatedData] = useState({});
 
   useEffect(() => {
@@ -123,11 +122,11 @@ const Profile = () => {
 </View>
       {/* Edit Profile Button */}
       <TouchableOpacity
-  style={styles.editButton}
-  onPress={() => router.push("/auth/editprofile")} // Ensure this matches your file path
->
-  <Text style={styles.editButtonText}>Edit Profile</Text>
-</TouchableOpacity>
+        style={styles.editButton}
+        onPress={() => navigation.navigate("/auth/profilesteup")}
+      >
+        <Text style={styles.editButtonText}>Edit Profile</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 };
