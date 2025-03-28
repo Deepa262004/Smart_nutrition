@@ -38,7 +38,7 @@ export default function EditProfile() {
     age: "",
     weight: "",
     height: "",
-    daily_insulin_level: "",
+    insulin: "",
     physical_activity: "",
     health_condition_preferences: "",
     dietary_preferences: "",
@@ -135,9 +135,9 @@ export default function EditProfile() {
               <TextInput 
                 style={styles.input} 
                 placeholder="Insulin (units)" 
-                value={formData.daily_insulin_level} 
+                value={formData.insulin} 
                 keyboardType="numeric" 
-                onChangeText={(value) => handleChange("daily_insulin_level", value)} 
+                onChangeText={(value) => handleChange("insulin", value)} 
               />
             ) : null}
            

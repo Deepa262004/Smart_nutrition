@@ -118,7 +118,7 @@ const Profile = () => {
   🥗 Lunch: {userData.lunch?.RecipeName || "Not recorded"}
 </Text>
 <Text style={styles.mealItem}>
-  🍎 Snack: {userData.snack?.RecipeName || "Not recorded"}
+  🍎 Dinner: {userData.dinner?.RecipeName || "Not recorded"}
 </Text>
 </View>
       {/* Edit Profile Button */}

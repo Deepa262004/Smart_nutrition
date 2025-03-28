@@ -4,7 +4,7 @@
     "slug": "nutriapp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.jpeg",
+    "icon": "./assets/images/image.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
