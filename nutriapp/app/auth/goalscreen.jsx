@@ -11,79 +11,53 @@ const { width } = Dimensions.get("window");
 export default function Goalscreen() {
     const router = useRouter();
 
-    // States
+    // State for user details
     const [goal, setGoal] = useState('');
     const [name, setName] = useState('');
     const [age, setAge] = useState('');
     const [height, setHeight] = useState('');
     const [weight, setWeight] = useState('');
     const [gender, setGender] = useState('');
-    const [healthCondition, setHealthCondition] = useState('none');
+    const [hasDiabetes, setHasDiabetes] = useState(false);
     const [insulin, setInsulin] = useState('');
     const [activityLevel, setActivityLevel] = useState('');
-   // const [dietaryPreference, setDietaryPreference] = useState('');
+    const [dietary_preferences, setDietaryPreference] = useState('');
     const [familyHistory, setFamilyHistory] = useState('');
-    
+    const [health_condition_preferences, setHealthCondition] = useState('');
 
-    // Predefined choices instead of fetching from backend
-    const choices = {
-        gender_choices: [
-            ['male', 'Male'],
-            ['female', 'Female'],
-            ['other', 'Other'],
-        ],
-        health_choices: [
-            ['none', 'None'],
-            ['diabetes', 'Diabetes'],
-            ['Cardiovascular', 'Cardiovascular'],
-            ['both', 'both'],
-        ],
-        dietary_choices: [
-            ['vegetarian', 'Vegetarian'],
-            ['non-vegetarian', 'Non-Vegetarian'],
-            ['vegan', 'Vegan'],
-        ],
-        physical_activity_choices: [
-            ['sedentary', 'Sedentary'],
-            ['light', 'Lightly Active'],
-            ['moderate', 'Moderately Active'],
-            ['active', 'Very Active'],
-        ],
-        family_history_choices: [
-                ['diabetic','Diabetic'],
-                ['non_diabetic','Non Diabetic']
-        ]
-            
-    };
-
-
-
+    // Handle form submission
     const handleOptionPress = async () => {
-        if (!goal || !age || !height || !weight || !gender || !activityLevel || !healthCondition) {
-            Alert.alert('Error', 'Please fill in all required details!');
+        if (!goal || !age || !height || !weight || !gender || !activityLevel) {
+            alert('Please fill in all required details!');
             return;
         }
-        try {
-            await AsyncStorage.setItem('userProfile', JSON.stringify({
-                name,
-                goal,
-                age,
-                height,
-                weight,
-                gender,
-                healthCondition,
-                insulin: (healthCondition === 'diabetes' || healthCondition === 'both') ? insulin : null,
-                activityLevel,
-                familyHistory,
-            }));
-            Alert.alert('Success', 'Profile updated successfully!');
+
+        // Set hasDiabetes to true if health condition is "diabetes"
+    const diabetesSelected = health_condition_preferences === 'diabetes';
+    
+    try {
+        await AsyncStorage.setItem('userProfile', JSON.stringify({
+            name,
+            goal,
+            age,
+            height,
+            weight,
+            gender,
+            hasDiabetes: diabetesSelected, // Updated logic
+            insulin: diabetesSelected ? insulin : null, // Store insulin only if diabetes is selected
+            activityLevel,
+            dietary_preferences,
+            familyHistory,
+            health_condition_preferences
+        }));
+            alert('Profile updated successfully!');
             router.push('/auth/loginscreen');
         } catch (error) {
             console.error('Error saving user profile:', error);
         }
     };
-
-    return (
+    
+return(
         <LinearGradient colors={['#DFFFD6', '#FFF8D6']} style={styles.container}>
             <Animated.View entering={FadeIn.duration(500)} style={styles.content}>
                 <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
@@ -94,33 +68,54 @@ export default function Goalscreen() {
                     <TextInput style={styles.input} placeholder="Height (cm)" value={height} keyboardType="numeric" onChangeText={setHeight} />
                     <TextInput style={styles.input} placeholder="Weight (kg)" value={weight} keyboardType="numeric" onChangeText={setWeight} />
 
-                    <Text style={styles.label}>Gender</Text>
-                    <Picker selectedValue={gender} style={styles.input} onValueChange={setGender}>
-                        <Picker.Item label="Select Gender" value="" />
-                        {choices.gender_choices.map((item) => (
-                            <Picker.Item key={item[0]} label={item[1]} value={item[0]} />
-                        ))}
-                    </Picker>
-
-                    <Text style={styles.label}>Health Condition</Text>
-                    <Picker selectedValue={healthCondition} style={styles.input} onValueChange={setHealthCondition}>
-                    <Picker.Item label="Select Condition" value="" />
-                        {choices.health_choices.map((item) => (
-                            <Picker.Item key={item[0]} label={item[1]} value={item[0]} />
-                        ))}
-                    </Picker>
-
-                    {healthCondition === 'diabetes' || healthCondition === 'both' ? (
+                   <Text style={styles.label}>Select Gender</Text>
+                               <Picker selectedValue={gender} style={styles.input} onValueChange={setGender}>
+                                   <Picker.Item label="Select Gender" value="" />
+                                   <Picker.Item label="Male" value="male" />
+                                   <Picker.Item label="Female" value="female" />
+                                   <Picker.Item label="Other" value="other" />
+                               </Picker>
+                   
+                               {/* Health Conditions Dropdown */}
+                               <Text style={styles.label}>Health Conditions</Text>
+                               <Picker selectedValue={health_condition_preferences} style={styles.input} onValueChange={setHealthCondition}>
+                                   <Picker.Item label="None" value="none" />
+                                   <Picker.Item label="Diabetes" value="diabetes" />
+                                   <Picker.Item label="Cardiovascular" value="cardiovascular" />
+                               </Picker>
+                   
+                  
+                    {health_condition_preferences === 'diabetes' || health_condition_preferences === 'both' ? (
                         <TextInput style={styles.input} placeholder="Insulin (units)" value={insulin} keyboardType="numeric" onChangeText={setInsulin} />
                     ) : null}
 
-                    <Text style={styles.label}>Physical Activity Level</Text>
-                    <Picker selectedValue={activityLevel} style={styles.input} onValueChange={setActivityLevel}>
-                    <Picker.Item label="Select Level" value="" />
-                        {choices.physical_activity_choices.map((item) => (
-                            <Picker.Item key={item[0]} label={item[1]} value={item[0]} />
-                        ))}
-                    </Picker>
+                    {/* Physical Activity Level */}
+                                <Text style={styles.label}>Physical Activity Level</Text>
+                                <Picker selectedValue={activityLevel} style={styles.input} onValueChange={setActivityLevel}>
+                                    <Picker.Item label="Select Activity Level" value="" />
+                                    <Picker.Item label="Low" value="low" />
+                                    <Picker.Item label="Moderate" value="moderate" />
+                                    <Picker.Item label="Active" value="active" />
+                                </Picker>
+                    
+                               {/* Dietary Preference Dropdown */}
+                                <Text style={styles.label}>Dietary Preference</Text>
+                                <Picker selectedValue={dietary_preferences} style={styles.input} onValueChange={setDietaryPreference}>
+                                    <Picker.Item label="Vegetarian" value="vegetarian" />
+                                    <Picker.Item label="Non Vegetarian" value="non vegetarian" />
+                                    <Picker.Item label="Vegan" value="vegan" />
+                                </Picker>
+                    
+                    
+                                {/* Family History Dropdown */}
+                                <Text style={styles.label}>Family Medical History</Text>
+                                <Picker selectedValue={familyHistory} style={styles.input} onValueChange={setFamilyHistory}>
+                                    <Picker.Item label="No history" value="none" />
+                                    <Picker.Item label="Diabetes" value="diabetes" />
+                                    <Picker.Item label="Cardiovascular" value="cardiovascular" />
+                                </Picker>
+                    
+                    
 
                     {/* <Text style={styles.label}>Dietary Preference</Text>
                     <Picker selectedValue={dietaryPreference} style={styles.input} onValueChange={setDietaryPreference}>
@@ -128,14 +123,6 @@ export default function Goalscreen() {
                             <Picker.Item key={item[0]} label={item[1]} value={item[0]} />
                         ))}
                     </Picker> */}
-
-                    <Text style={styles.label}>Family Medical History</Text>
-                    <Picker selectedValue={familyHistory} style={styles.input} onValueChange={setFamilyHistory}>
-                    <Picker.Item label="Select" value="" />
-                        {choices.family_history_choices.map((item) => (
-                            <Picker.Item key={item[0]} label={item[1]} value={item[0]} />
-                        ))}
-                    </Picker>
 
                     <TouchableOpacity style={styles.button} onPress={handleOptionPress}>
                         <Text style={styles.buttonText}>Submit</Text>

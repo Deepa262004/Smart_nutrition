@@ -21,6 +21,7 @@ import random
 User = get_user_model()
 
 # Load Models
+# Load Models
 diabetes_model = joblib.load(r"authapp/data/diabetes_model (1).pkl")
 cardio_model = joblib.load(r"authapp/data/cardio_model (1).pkl")
 
@@ -37,11 +38,14 @@ import pandas as pd
 @api_view(['POST'])
 def predict_diet(request):
     """Predict diet recommendations based on user profile."""
-    serializer = UserProfileSerializer(data=request.data)
-    
+   
+    data = request.data.copy()
+    print(data)
+    serializer = UserProfileSerializer(data=data)
+    print("To serialir:\n ",data)
     if serializer.is_valid():
         user_profile = serializer.validated_data
-
+        print("From serializers:\n",user_profile)
         # Handle missing values safely
         glucose = user_profile.get('daily_insulin_level', 0)
         weight = user_profile.get('weight', 0)
@@ -51,7 +55,7 @@ def predict_diet(request):
         systolic_bp = user_profile.get('systolic_bp', 0)
         diastolic_bp = user_profile.get('diastolic_bp', 0)
         cholesterol = user_profile.get('cholesterol', 0)
-        gender = 1 if user_profile.get('gender', '').lower() in ['male', 'female'] else 0
+        gender = 1 if(user_profile.get('gender', '').lower() == 'male'  or  user_profile.get('gender', '').lower() == 'female') else 0
         family_history = user_profile.get('family_history', '').lower()
         health_condition_preferences = user_profile.get('health_condition_preferences', '').lower()
         dietary_preferences = user_profile.get('dietary_preferences', '').lower()
@@ -62,6 +66,7 @@ def predict_diet(request):
 
         try:
             predicted_outcome = diabetes_model.predict(input_data)[0]
+            
             predicted_cardio = cardio_model.predict(input_data)[0]
         except Exception as e:
             return Response({"error": f"Model prediction error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -70,38 +75,111 @@ def predict_diet(request):
         is_diabetic = (predicted_outcome == 1) or (family_history == 'diabetic') or (health_condition_preferences in ['diabetes', 'both'])
         has_cardio = (predicted_cardio == 1) or (health_condition_preferences in ['cardiovascular', 'both'])
 
-        # Filter recipes based on dietary preferences
-        recommended_recipes = recipes_df
-        if dietary_preferences:
-            recommended_recipes = recommended_recipes[recommended_recipes['Diet'].str.lower() == dietary_preferences]
-
-        # Strictly filter only pure vegetarian recipes
-        # Strictly filter only Vegetarian and High Protein Vegetarian diets
-        if dietary_preferences == 'Vegetarian':
-            vegetarian_diets = ['vegetarian']
-            recommended_recipes = recommended_recipes[recommended_recipes['Diet']=='vegetarian']
-        
-        if dietary_preferences == 'Non-Vegetarian':
-            non_vegetarian_diets = ['non vegetarian']
-            recommended_recipes = recommended_recipes[recommended_recipes['Diet']=='non vegetarian']
-        
+        print("HE:",health_condition_preferences)
+        print("Diet: ",dietary_preferences)
+        print("diabetes:",is_diabetic)
+        print("cardio:",has_cardio)
         
         # Adjust recipes for health conditions
         if is_diabetic:
-            recommended_recipes = recommended_recipes[~recommended_recipes['RecipeName'].str.contains("sugar", case=False, na=False)]
+            if dietary_preferences=='vegetarian':
+                recommended_recipes = recipes_df[
+                            (recipes_df["Diet"].str.lower().isin(["vegetarian","high protein vegetarian"])) &  # Vegetarian diet
+                            (recipes_df['carb_g_x'] <= 50) |( # Low-carb
+                            (recipes_df['fat_g_x'] <= 25) )& # Low-fa
+                            (
+                            (recipes_df['fibre_g_x'] >= 5) |  # High-fiber
+                            (recipes_df['protein_g_x'] >= 15)  # High protein
+                            )
+                            ]
+            elif dietary_preferences=='vegan':  # Vegan
+                    recommended_recipes = recipes_df[
+                         (recipes_df['Diet'].str.lower() == 'vegan') &  # Vegan diet
+                         (recipes_df['carb_g_x'] <= 50) |( # Low-carb
+                        (recipes_df['fat_g_x'] <= 25) )& # Low-fa
+                        (
+                        (recipes_df['fibre_g_x'] >= 5) |  # High-fiber
+                        (recipes_df['protein_g_x'] >= 15)  # High protein
+                        )
+                        
+                    ]
+            else:  # Non-Vegetarian
+              print("Hrllo")
+              recommended_recipes = recipes_df[
+                (recipes_df["Diet"].str.lower().isin(["non vegeterian", "high protein non vegetarian"])) &  # Non-vegetarian diet
+                (recipes_df['carb_g_x'] <= 50) |( # Low-carb
+                (recipes_df['fat_g_x'] <= 25) )& # Low-fa
+                (
+                (recipes_df['fibre_g_x'] >= 5) |  # High-fiber
+                (recipes_df['protein_g_x'] >= 15)  # High protein
+                )
+                ]
+    
+   
+            
+        if is_diabetic==False:
+            if dietary_preferences=='vegetarian':
+                recommended_recipes = recipes_df[recipes_df["Diet"].str.lower().isin(["vegetarian","high protein vegetarian"])]
+            elif dietary_preferences=='vegan':
+                recommended_recipes = recipes_df[recipes_df['Diet'].str.lower()== 'vegan']
+            elif dietary_preferences=='non vegetarian':
+                print("here")
+                print(recipes_df[recipes_df["Diet"].str.lower().isin(["non vegeterian"])])
+                print("hey")
+                recommended_recipes =recipes_df[np.logical_not(recipes_df["Diet"].str.lower().isin(["vegetarian",'vegan','high protein vegetarian']))]
+                print("recc",recommended_recipes)
+
+            else:
+                 recommended_recipes = recipes_df[recipes_df['Diet'].str.lower().isin(['vegetarian', 'non vegetarian', 'vegan'])]
+
+        
         if has_cardio:
-            recommended_recipes = recommended_recipes[~recommended_recipes['RecipeName'].str.contains("fried", case=False, na=False)]
+            if dietary_preferences == 'vegetarian':
+                recommended_recipes = recipes_df[
+                    (recipes_df["Diet"].str.lower().isin(["vegetarian","high protein vegetarian"])) &
+                    (recipes_df['fat_g_x'] <= 15) &
+                    (recipes_df['fibre_g_x'] >= 7)(  # Vegetarian diet
+                    (recipes_df['carb_g_x'] <= 50) | # Low-carb
+                    (recipes_df['protein_g_x'] >= 10) | # Moderate protein
+                    (recipes_df['sodium_mg_x'] <= 500) ) # Low sodium for blood pressure
+                ]
+                
+            elif dietary_preferences == 'vegan':  # Vegan
+                recommended_recipes = recipes_df[
+                    (recipes_df['Diet'].str.lower() == 'vegan') &  # Vegan diet
+                    (recipes_df['fat_g_x'] <= 15) &
+                    (recipes_df['fibre_g_x'] >= 7)(  # Vegetarian diet
+                    (recipes_df['carb_g_x'] <= 50) | # Low-carb
+                    (recipes_df['protein_g_x'] >= 10) | # Moderate protein
+                    (recipes_df['sodium_mg_x'] <= 500) ) # Low sodium for blood pressure
+                ]
+                
+            elif dietary_preferences == 'non vegetarian':  # Non-Vegetarian
+                recommended_recipes = recipes_df[
 
-        # Randomly select up to 5 recipes
-        recommended_recipes = recommended_recipes.sample(n=min(5, len(recommended_recipes)), random_state=random.randint(1, 1000)).to_dict('records')
+                   (recipes_df["Diet"].str.lower().isin(["non vegeterian", "high protein non vegetarian"])) &  # Non-vegetarian diet
+                    (recipes_df['fat_g_x'] <= 15) &
+                    (recipes_df['fibre_g_x'] >= 7)(  # Vegetarian diet
+                    (recipes_df['carb_g_x'] <= 50) | # Low-carb
+                    (recipes_df['protein_g_x'] >= 10) | # Moderate protein
+                    (recipes_df['sodium_mg_x'] <= 500) ) # Low sodium for blood pressure # Low sodium limit
+                ]
+        print(dietary_preferences)
+        print(health_condition_preferences)
 
+        # Select top 12 recommendations
+        recommended_recipes = recommended_recipes[['RecipeName', 'TotalTimeInMins', 'Diet', 'TranslatedInstructions']].tail(4).to_dict('records')
+        print(recommended_recipes)
         return Response({
-            'recipes': recommended_recipes,
-            'is_diabetic': is_diabetic,
+            'recipes': recommended_recipes, 
+            'is_diabetic': is_diabetic, 
             'has_cardio': has_cardio
         }, status=status.HTTP_200_OK)
-
+    else:
+        print("Errors:", serializer.errors)  # Print validation errors
+        return Response({"errors": serializer.errors}, status=400)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 
@@ -238,6 +316,8 @@ def profile_setup(request):
         user_profile.height = request.data.get('height', user_profile.height)
         user_profile.insulin = request.data.get('insulin', user_profile.insulin)
         user_profile.weight = request.data.get('weight', user_profile.weight)
+        user_profile.dietary_preferences=request.data.get('dietaryPreference',user_profile.dietary_preferences)
+        user_profile.health_condition_preferences=request.data.get('healthCondition',user_profile.health_condition_preferences)
 
         user_profile.save()
 

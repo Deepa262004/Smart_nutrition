@@ -64,7 +64,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     def validate_physical_activity(self, value):
         """Normalize physical activity input and validate choices."""
-        valid_choices = ['sedentary', 'light', 'moderate', 'active']
+        valid_choices = ['sedentary', 'low', 'moderate', 'active']
         value = value.lower()
         if value not in valid_choices:
             raise serializers.ValidationError(f"Invalid physical activity level. Choose from {valid_choices}.")

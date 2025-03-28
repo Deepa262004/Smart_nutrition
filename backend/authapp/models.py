@@ -28,49 +28,57 @@ class UserProfile(models.Model):
         ('male', 'Male'),
         ('female', 'Female')
     ]
-
+    
     FAMILY_HISTORY_CHOICES=(
         ('diabetic','Diabetic'),
         ('non_diabetic','Non Diabetic')
     )
-    DIET_CHOICE = [
+    DIET_CHOI = [
         ('vegetarian', 'Vegetarian'),
         ('non vegetarian', 'Non Vegetarian'),
         ('vegan', 'Vegan'),
+    ]
+    PHYSICAL_ACTIVITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High')
     ]
 
     HEALTH_CHOICES=[
         ('diabetes','Diabetes'),
         ('cardiovascular','Cardiovascular'),
-        ('both','Both'),
-        ('none','None')
+        ('none','none')
     ]
 
-    PHYSICAL_ACTIVITY_CHOICES = [
-    ('sedentary', 'Sedentary (Minimal movement, mostly sitting)'),
-    ('low_active', 'Low active (Light physical activity, occasional exercise)'),
-    ('active', 'Active (Regular exercise, moderate physical activity)'),
-    ('very_active', 'Very active (Intense daily physical activity or workouts)'),
-]
-
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES,default="other")
-    physical_activity = models.CharField(max_length=150, choices=PHYSICAL_ACTIVITY_CHOICES,default='low_active')
+    physical_activity = models.CharField(max_length=10, choices=PHYSICAL_ACTIVITY_CHOICES,default='low')
 
     name = models.CharField(max_length=100,default="guest")
     goal = models.CharField(max_length=255,default="None")
     age = models.IntegerField(default=25)  # You can change 25 to any appropriate default value
     height = models.FloatField(default=150)
     weight = models.FloatField(default=55)
+    has_diabetes = models.BooleanField(default=False)
+    insulin = models.FloatField(null=True, blank=True)
     health_condition_preferences=models.CharField(
         max_length=20,
         choices=HEALTH_CHOICES,
         null=True,
         blank=True
     )
-    insulin = models.FloatField(null=True, blank=True)
+
     # physical_activity = models.CharField(max_length=20, choices=[('Low', 'low'), ('Moderate', 'moderate'), ('Active', 'Active')], default='Low' )
-    dietary_preference = models.CharField(max_length=100, choices=DIET_CHOICE, blank=True, null=True)
-    family_history = models.TextField(blank=True,choices=FAMILY_HISTORY_CHOICES, null=True)
+    dietary_preferences = models.CharField(
+        max_length=20,
+        choices=DIET_CHOI,
+        null=True,
+        blank=True)
+    family_history = models.CharField(
+        max_length=20,
+        choices=FAMILY_HISTORY_CHOICES,
+        null=True,
+        blank=True
+    )
 
     def __str__(self):
         return self.name

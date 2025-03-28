@@ -15,23 +15,18 @@ const choices = {
     ['other', 'Other']
   ],
   health_choices: [
-    ['diabetes', 'Diabetes'],
-    ['hypertension', 'Hypertension'],
-    ['both', 'Both'],
-    ['none', 'None']
+    ['diabetes','Diabetes'],
+        ['cardiovascular','Cardiovascular'],
+        ['none','none']
   ],
   physical_activity_choices: [
-    ['sedentary', 'Sedentary'],
-    ['light', 'Light'],
-    ['moderate', 'Moderate'],
-    ['active', 'Active'],
-    ['very_active', 'Very Active']
+    ['low', 'Low'],
+    ['medium', 'Medium'],
+    ['high', 'High']
   ],
   family_history_choices: [
-    ['diabetes', 'Diabetes'],
-    ['hypertension', 'Hypertension'],
-    ['both', 'Both'],
-    ['none', 'None']
+    ['diabetic','Diabetic'],
+    ['non_diabetic','Non Diabetic']
   ]
 };
 
@@ -157,6 +152,14 @@ export default function EditProfile() {
                 <Picker.Item key={item[0]} label={item[1]} value={item[0]} />
               ))}
             </Picker>
+
+            {/* Dietary Preference Dropdown */}
+            <Text style={styles.label}>Dietary Preference</Text>
+            <Picker selectedValue={formData.dietary_preferences} style={styles.input}  onValueChange={(value) => handleChange("dietary_preferences", value)}>
+                <Picker.Item label="Vegetarian" value="vegetarian" />
+                <Picker.Item label="Non Vegetarian" value="non vegetarian" />
+                <Picker.Item label="Vegan" value="vegan" />
+    </Picker>
            
             <Text style={styles.label}>Family Medical History</Text>
             <Picker 
