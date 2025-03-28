@@ -24,41 +24,61 @@ from .models import UserProfile
 from rest_framework import serializers
 from .models import UserProfile
 
+from rest_framework import serializers
+from .models import UserProfile
+
 class UserProfileSerializer(serializers.ModelSerializer):
     """Serializer for storing user health details."""
 
     class Meta:
         model = UserProfile
         fields = [
-            'name', 'goal', 'age', 'height', 'weight', 'gender', 
-            'has_diabetes', 'insulin', 'physical_activity', 
-            'dietary_preference', 'family_history'
+            'name', 'goal', 'age', 'height', 'weight', 'gender',
+            'health_condition_preferences', 'insulin', 'physical_activity',
+            'family_history'
         ]
 
     def validate_gender(self, value):
         """Normalize gender input and validate choices."""
-        valid_choices = ['male', 'female']
+        valid_choices = ['male', 'female', 'other']
         value = value.lower()
         if value not in valid_choices:
             raise serializers.ValidationError(f"Invalid gender. Choose from {valid_choices}.")
         return value
+    
+     
+    def validate_family_history(self, value):
+        """Ensure family history is a valid choice."""
+        valid_choices = ['diabetic', 'non_diabetic']
+        if value not in valid_choices:
+            raise serializers.ValidationError(f"{value} is not a valid choice. Choose from {valid_choices}.")
+        return value
+
+    def validate_health_condition(self, value):
+        """Normalize health condition input and validate choices."""
+        valid_choices = ['none', 'diabetes', 'cardiovascular', 'both']
+        value = value.lower()
+        if value not in valid_choices:
+            raise serializers.ValidationError(f"Invalid health condition. Choose from {valid_choices}.")
+        return value
 
     def validate_physical_activity(self, value):
         """Normalize physical activity input and validate choices."""
-        valid_choices = ['low', 'medium', 'high']
+        valid_choices = ['sedentary', 'light', 'moderate', 'active']
         value = value.lower()
         if value not in valid_choices:
             raise serializers.ValidationError(f"Invalid physical activity level. Choose from {valid_choices}.")
         return value
 
     def validate(self, data):
-        """Ensure insulin value is provided only if the user has diabetes."""
-        if data.get('has_diabetes') and data.get('insulin') is None:
-            raise serializers.ValidationError({"insulin": "This field is required for users with diabetes."})
+        """Ensure insulin value is required only if the user has diabetes or both conditions."""
+        health_condition = data.get('health_condition_preferences')
+        if health_condition in ['diabetes', 'both'] and not data.get('insulin'):
+            raise serializers.ValidationError({"insulin": "This field is required for users with diabetes or both conditions."})
         return data
 
     def create(self, validated_data):
-        """Create user profile linked to the authenticated user."""
+        """Create or update user profile linked to the authenticated user."""
         user = self.context['request'].user
         profile, created = UserProfile.objects.update_or_create(user=user, defaults=validated_data)
         return profile
@@ -69,6 +89,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
+
 
 
 class FullUserSerializer(serializers.ModelSerializer):

@@ -330,6 +330,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   planMealButtonText: { color: "white", fontSize: 16, fontWeight: "bold" },
+  
 });
 
 export default Home;

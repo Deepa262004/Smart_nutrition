@@ -15,6 +15,7 @@ import pandas as pd
 import numpy as np
 from rest_framework import status
 from .models import UserProfile
+import random
 
 
 User = get_user_model()
@@ -37,9 +38,10 @@ import pandas as pd
 def predict_diet(request):
     """Predict diet recommendations based on user profile."""
     serializer = UserProfileSerializer(data=request.data)
+    
     if serializer.is_valid():
         user_profile = serializer.validated_data
-        
+
         # Handle missing values safely
         glucose = user_profile.get('daily_insulin_level', 0)
         weight = user_profile.get('weight', 0)
@@ -49,7 +51,7 @@ def predict_diet(request):
         systolic_bp = user_profile.get('systolic_bp', 0)
         diastolic_bp = user_profile.get('diastolic_bp', 0)
         cholesterol = user_profile.get('cholesterol', 0)
-        gender = 1 if(user_profile.get('gender', '').lower() == 'male'  or  user_profile.get('gender', '').lower() == 'female') else 0
+        gender = 1 if user_profile.get('gender', '').lower() in ['male', 'female'] else 0
         family_history = user_profile.get('family_history', '').lower()
         health_condition_preferences = user_profile.get('health_condition_preferences', '').lower()
         dietary_preferences = user_profile.get('dietary_preferences', '').lower()
@@ -68,28 +70,39 @@ def predict_diet(request):
         is_diabetic = (predicted_outcome == 1) or (family_history == 'diabetic') or (health_condition_preferences in ['diabetes', 'both'])
         has_cardio = (predicted_cardio == 1) or (health_condition_preferences in ['cardiovascular', 'both'])
 
-        # Filter and recommend recipes
+        # Filter recipes based on dietary preferences
+        recommended_recipes = recipes_df
         if dietary_preferences:
-            recommended_recipes = recipes_df[recipes_df['Diet'].str.lower() == dietary_preferences]
-        else:
-            recommended_recipes = recipes_df  # Default to all recipes if no preference is provided
+            recommended_recipes = recommended_recipes[recommended_recipes['Diet'].str.lower() == dietary_preferences]
 
+        # Strictly filter only pure vegetarian recipes
+        # Strictly filter only Vegetarian and High Protein Vegetarian diets
+        if dietary_preferences == 'Vegetarian':
+            vegetarian_diets = ['vegetarian']
+            recommended_recipes = recommended_recipes[recommended_recipes['Diet']=='vegetarian']
+        
+        if dietary_preferences == 'Non-Vegetarian':
+            non_vegetarian_diets = ['non vegetarian']
+            recommended_recipes = recommended_recipes[recommended_recipes['Diet']=='non vegetarian']
+        
+        
         # Adjust recipes for health conditions
         if is_diabetic:
             recommended_recipes = recommended_recipes[~recommended_recipes['RecipeName'].str.contains("sugar", case=False, na=False)]
         if has_cardio:
             recommended_recipes = recommended_recipes[~recommended_recipes['RecipeName'].str.contains("fried", case=False, na=False)]
 
-        # Select top 12 recommendations
-        recommended_recipes = recommended_recipes[['RecipeName', 'TotalTimeInMins', 'Diet', 'TranslatedInstructions']].head(5).to_dict('records')
+        # Randomly select up to 5 recipes
+        recommended_recipes = recommended_recipes.sample(n=min(5, len(recommended_recipes)), random_state=random.randint(1, 1000)).to_dict('records')
 
         return Response({
-            'recipes': recommended_recipes, 
-            'is_diabetic': is_diabetic, 
+            'recipes': recommended_recipes,
+            'is_diabetic': is_diabetic,
             'has_cardio': has_cardio
         }, status=status.HTTP_200_OK)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 
@@ -163,6 +176,51 @@ def login_view(request):
     }, status=status.HTTP_200_OK)
 
 
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+
+
+# ✅ Create or Update Profile
+@api_view(['POST'])
+def setup_profile(request):
+    username = request.data.get('username')
+    
+    if not username:
+        return Response({"error": "Username is required"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    profile, created = UserProfile.objects.update_or_create(
+        username=username, defaults=request.data
+    )
+    
+    return Response(
+        {"message": "Profile created" if created else "Profile updated", "profile": UserProfileSerializer(profile).data},
+        status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
+    )
+
+# ✅ Fetch Profile by Username
+# @api_view(['GET'])
+# def get_profile(request, username):
+#     try:
+#         profile = UserProfile.objects.get(username=username)
+#         return Response(UserProfileSerializer(profile).data, status=status.HTTP_200_OK)
+#     except UserProfile.DoesNotExist:
+#         return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
+# ✅ Update Profile
+@api_view(['PUT'])
+def update_profile(request, username):
+    try:
+        profile = UserProfile.objects.get(name=username)
+        serializer = UserProfileSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Profile updated", "profile": serializer.data}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except UserProfile.DoesNotExist:
+        return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def profile_setup(request):
@@ -189,16 +247,26 @@ def profile_setup(request):
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])  # Ensure only authenticated users can access
 def get_user_profile(request):
     """API to get user profile details."""
     try:
-        user_profile = UserProfile.objects.get(user=request.user)
+        user_profile = UserProfile.objects.get(na)
         serializer = UserProfileSerializer(user_profile)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except UserProfile.DoesNotExist:
         return Response({"message": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
-    
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])  # Ensure only authenticated users can access    
+def get_choices(request):
+    choices = {
+        "gender_choices": UserProfile.GENDER_CHOICES,
+        "health_choices": UserProfile.HEALTH_CHOICES,
+        "physical_activity_choices": UserProfile.PHYSICAL_ACTIVITY_CHOICES,
+        "diet_choices": UserProfile.DIET_CHOICE,
+        "family_history_choices": UserProfile.FAMILY_HISTORY_CHOICES,
+    }
+    return JsonResponse(choices)
 
 API_KEY= '80f8317fe9164e8a9951298d3009ff2e'
 from django.views.decorators.csrf import csrf_exempt

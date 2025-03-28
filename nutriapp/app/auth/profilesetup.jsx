@@ -30,7 +30,7 @@ const ProfileSetup = ({ navigation }) => {
       }
 
       const response = await axios.post(
-        "http://127.0.0.1:8001/auth/profile/setup/",
+        "http://192.168.31.81:8001/auth/profile/setup/",
         formData,
         { headers: { Authorization: `Bearer ${token}`} }
       );

@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { Picker } from '@react-native-picker/picker';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
-  ActivityIndicator,
   FlatList,
   Alert,
   Modal,
@@ -60,7 +59,7 @@ const MealRecommendation = () => {
 
     try {
       setLoading(true);
-      const response = await axios.post("http://127.0.0.1:8001/auth/predict/", requestData);
+      const response = await axios.post("http://192.168.31.81:8001/auth/predict/", requestData);
       setMeals(response.data.recipes);
     } catch (error) {
       console.error("Error fetching meal recommendations:", error);
@@ -87,88 +86,99 @@ const MealRecommendation = () => {
     setActiveMealIndex(index);
   };
 
+  const choices = {
+    dietary_choices: [
+      ['vegetarian', 'Vegetarian'],
+      ['non-vegetarian', 'Non-Vegetarian'],
+      ['eggeterian', 'Eggeterian'],
+    ]
+  };
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Get Your Customized Meal Plan</Text>
-      <Text style={styles.subtitle}>Fill in the details to receive a personalized meal plan:</Text>
+    <View style={styles.container}>
+      <FlatList
+        ListHeaderComponent={
+          <View style={styles.formContainer}>
+            <Text style={styles.title}>Get Your Customized Meal Plan</Text>
+            <Text style={styles.subtitle}>Fill in the details to receive a personalized meal plan:</Text>
+            
+            <Picker
+              selectedValue={formData.dietPreference}
+              style={styles.input}
+              onValueChange={(value) => handleChange("dietPreference", value)}
+            >
+              <Picker.Item label="Select Diet Preference" value="" />
+              {choices.dietary_choices.map((item) => (
+                <Picker.Item key={item[0]} label={item[1]} value={item[0]} />
+              ))}
+            </Picker>
 
-      <View style={styles.formContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="What type of diet do you follow? (E.g., Vegan, Low Carb)"
-          placeholderTextColor="#777"
-          value={formData.dietPreference}
-          onChangeText={(text) => handleChange("dietPreference", text)}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Foods you dislike (E.g., Broccoli, Mushrooms)"
-          placeholderTextColor="#777"
-          value={formData.dislikedFoods}
-          onChangeText={(text) => handleChange("dislikedFoods", text)}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Any allergies? (E.g., Peanuts, Dairy)"
-          placeholderTextColor="#777"
-          value={formData.allergies}
-          onChangeText={(text) => handleChange("allergies", text)}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Your health goals (E.g., Weight Loss, Muscle Gain)"
-          placeholderTextColor="#777"
-          value={formData.healthGoals}
-          onChangeText={(text) => handleChange("healthGoals", text)}
-        />
+            <TextInput
+              style={styles.input}
+              placeholder="Foods you dislike (E.g., Broccoli, Mushrooms)"
+              placeholderTextColor="#777"
+              value={formData.dislikedFoods}
+              onChangeText={(text) => handleChange("dislikedFoods", text)}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Any allergies? (E.g., Peanuts, Dairy)"
+              placeholderTextColor="#777"
+              value={formData.allergies}
+              onChangeText={(text) => handleChange("allergies", text)}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Your health goals (E.g., Weight Loss, Muscle Gain)"
+              placeholderTextColor="#777"
+              value={formData.healthGoals}
+              onChangeText={(text) => handleChange("healthGoals", text)}
+            />
 
-        <TouchableOpacity style={styles.button} onPress={submitMealPlanRequest}>
-          <Text style={styles.buttonText}>Generate Meal Plan</Text>
-        </TouchableOpacity>
-      </View>
+            <TouchableOpacity style={styles.button} onPress={submitMealPlanRequest}>
+              <Text style={styles.buttonText}>Generate Meal Plan</Text>
+            </TouchableOpacity>
+          </View>
+        }
+        data={meals}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item, index }) => (
+          <View style={styles.mealItem}>
+            <Text style={styles.mealName}>{item.RecipeName}</Text>
+            <Text style={styles.mealDetails}>Total Time: {item.TotalTimeInMins} mins</Text>
+            <Text style={styles.mealDetails}>Diet: {item.Diet}</Text>
+            <Text style={styles.mealDetails}>Instructions: {item.TranslatedInstructions}</Text>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => {
+                setSelectedMeal(item);
+                toggleDropdown(index);
+              }}
+            >
+              <Ionicons name="add" size={24} color="#1565C0" />
+            </TouchableOpacity>
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#1565C0" />
-      ) : meals.length > 0 ? (
-        <FlatList
-          data={meals}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item, index }) => (
-            <View style={styles.mealItem}>
-              <Text style={styles.mealName}>{item.RecipeName}</Text>
-              <Text style={styles.mealDetails}>Total Time: {item.TotalTimeInMins} mins</Text>
-              <Text style={styles.mealDetails}>Diet: {item.Diet}</Text>
-              <Text style={styles.mealDetails}>Instructions: {item.TranslatedInstructions}</Text>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => {
-                  setSelectedMeal(item);
-                  toggleDropdown(index);
-                }}
-              >
-                <Ionicons name="add" size={24} color="#1565C0" />
-              </TouchableOpacity>
-
-              {/* Dropdown for Meal Selection */}
-              {dropdownVisible && activeMealIndex === index && (
-                <View style={styles.dropdown}>
-                  {["Breakfast", "Lunch", "Dinner"].map((mealType) => (
-                    <TouchableOpacity
-                      key={mealType}
-                      style={styles.dropdownItem}
-                      onPress={() => handleMealSelection(item, mealType.toLowerCase())}
-                    >
-                      <Text style={styles.dropdownItemText}>{mealType}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
-          )}
-        />
-      ) : (
-        <Text style={styles.noMealsText}>No meals recommended yet.</Text>
-      )}
+            {dropdownVisible && activeMealIndex === index && (
+              <View style={styles.dropdown}>
+                {["Breakfast", "Lunch", "Dinner"].map((mealType) => (
+                  <TouchableOpacity
+                    key={mealType}
+                    style={styles.dropdownItem}
+                    onPress={() => handleMealSelection(item, mealType.toLowerCase())}
+                  >
+                    <Text style={styles.dropdownItemText}>{mealType}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+        ListEmptyComponent={
+          <Text style={styles.noMealsText}>
+            {loading ? "Loading..." : "No meals recommended yet. Fill the form and generate a meal plan."}
+          </Text>
+        }
+      />
 
       {/* Modal for Meal Details */}
       <Modal visible={modalVisible} transparent animationType="slide">
@@ -183,21 +193,27 @@ const MealRecommendation = () => {
                 <Text style={styles.modalText}>Instructions: {selectedMeal.TranslatedInstructions}</Text>
               </>
             )}
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
+            <TouchableOpacity 
+              style={styles.modalCloseButton}
+              onPress={() => setModalVisible(false)}
+            >
               <Text style={styles.closeButton}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
+    flex: 1,
     padding: 16,
     backgroundColor: "#F5F5F5",
+  },
+  formContainer: {
+    marginBottom: 20,
   },
   title: {
     fontSize: 24,
@@ -209,9 +225,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#777",
     marginBottom: 16,
-  },
-  formContainer: {
-    marginBottom: 20,
   },
   input: {
     height: 40,
@@ -227,6 +240,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
+    marginVertical: 10,
   },
   buttonText: {
     color: "#fff",
@@ -303,17 +317,24 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 16,
+    color: "#1565C0",
   },
   modalText: {
     fontSize: 16,
     marginBottom: 12,
+    color: "#333",
+  },
+  modalCloseButton: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 5,
+    alignSelf: 'flex-end',
   },
   closeButton: {
     color: "#1565C0",
     fontSize: 16,
     fontWeight: "bold",
-    textAlign: "center",
-    marginTop: 16,
   },
 });
 
