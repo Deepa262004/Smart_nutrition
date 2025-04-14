@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 
 const Profile = () => {
-  const navigation = useNavigation();
+  const router = useRouter();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [calculatedData, setCalculatedData] = useState({});
@@ -33,12 +33,10 @@ const Profile = () => {
 
     const { height, weight, age, gender, activityLevel } = data;
 
-    // Mifflin-St Jeor Equation
     let BMR = gender === "male"
       ? (10 * weight) + (6.25 * height) - (5 * age) + 5
       : (10 * weight) + (6.25 * height) - (5 * age) - 161;
 
-    // Adjust for activity level
     const activityMultiplier = {
       sedentary: 1.2,
       light: 1.375,
@@ -47,11 +45,9 @@ const Profile = () => {
     };
 
     const TDEE = BMR * (activityMultiplier[activityLevel] || 1.2);
-
-    // Macronutrient Breakdown
-    const carbs = (TDEE * 0.5) / 4;   // 50% from carbs (4 kcal/g)
-    const protein = (TDEE * 0.3) / 4; // 30% from protein (4 kcal/g)
-    const fat = (TDEE * 0.2) / 9;     // 20% from fat (9 kcal/g)
+    const carbs = (TDEE * 0.5) / 4;
+    const protein = (TDEE * 0.3) / 4;
+    const fat = (TDEE * 0.2) / 9;
 
     setCalculatedData({
       calories: Math.round(TDEE),
@@ -75,7 +71,7 @@ const Profile = () => {
         <Text>No profile data found. Please update your profile.</Text>
         <TouchableOpacity
           style={styles.editButton}
-          onPress={() => navigation.navigate("/auth/profilesteup")}
+          onPress={() => router.push("/auth/profilesteup")}
         >
           <Text style={styles.editButtonText}>Set Up Profile</Text>
         </TouchableOpacity>
@@ -85,20 +81,17 @@ const Profile = () => {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Profile Header */}
       <View style={styles.profileHeader}>
         <Text style={styles.userName}>{userData.name || "User"}</Text>
         <Text style={styles.userDetails}>Age: {userData.age || "N/A"}</Text>
         <Text style={styles.userDetails}>Height: {userData.height} cm | Weight: {userData.weight} kg</Text>
       </View>
 
-      {/* Health Goals */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Health Goals</Text>
         <Text style={styles.goalItem}>✅ {userData.goal || "No goal set"}</Text>
       </View>
 
-      {/* Daily Nutrition Summary */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Daily Nutrition Summary</Text>
         <View style={styles.nutritionRow}>
@@ -108,22 +101,22 @@ const Profile = () => {
           <Text style={styles.nutritionItem}>Fat: {calculatedData.fat || "N/A"}g</Text>
         </View>
       </View>
-<View>
-      {/* Meal History */}
-      <Text style={styles.mealItem}>
-  🍲 Breakfast: {userData.breakfast?.RecipeName || "Not recorded"}
-</Text>
-<Text style={styles.mealItem}>
-  🥗 Lunch: {userData.lunch?.RecipeName || "Not recorded"}
-</Text>
-<Text style={styles.mealItem}>
-  🍎 Dinner: {userData.dinner?.RecipeName || "Not recorded"}
-</Text>
-</View>
-      {/* Edit Profile Button */}
+
+      <View>
+        <Text style={styles.mealItem}>
+          🍲 Breakfast: {userData.breakfast?.RecipeName || "Not recorded"}
+        </Text>
+        <Text style={styles.mealItem}>
+          🥗 Lunch: {userData.lunch?.RecipeName || "Not recorded"}
+        </Text>
+        <Text style={styles.mealItem}>
+          🍎 Dinner: {userData.dinner?.RecipeName || "Not recorded"}
+        </Text>
+      </View>
+
       <TouchableOpacity
         style={styles.editButton}
-        onPress={() => navigation.navigate("/auth/profilesteup")}
+        onPress={() => router.push("/auth/editprofile")}
       >
         <Text style={styles.editButtonText}>Edit Profile</Text>
       </TouchableOpacity>

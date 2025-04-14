@@ -104,28 +104,28 @@ const MealRecommendation = () => {
       <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
-          placeholder="What type of diet do you follow? (E.g., Vegan, Low Carb)"
+          placeholder="What type of diet do you follow? (E.g., Vegetarian,Non Vegetarian)"
           placeholderTextColor="#777"
           value={formData.dietary_preferences}
           onChangeText={(text) => handleChange("dietary_preferences", text)}
         />
         <TextInput
           style={styles.input}
-          placeholder="Foods you dislike (E.g., Broccoli, Mushrooms)"
+          placeholder="Foods you dislike "
           placeholderTextColor="#777"
           value={formData.dislikedFoods}
           onChangeText={(text) => handleChange("dislikedFoods", text)}
         />
         <TextInput
           style={styles.input}
-          placeholder="Any allergies? (E.g., Peanuts, Dairy)"
+          placeholder="Any allergies? "
           placeholderTextColor="#777"
           value={formData.allergies}
           onChangeText={(text) => handleChange("allergies", text)}
         />
         <TextInput
           style={styles.input}
-          placeholder="Your health goals (E.g., Weight Loss, Muscle Gain)"
+          placeholder="Your Health condition (diabetes, cardiovascular, none)"
           placeholderTextColor="#777"
           value={formData.health_condition_preferences}
           onChangeText={(text) => handleChange("health_condition_preferences", text)}
