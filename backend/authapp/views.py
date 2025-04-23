@@ -204,7 +204,7 @@ def predict_diet(request):
         # Select top 12 recommendations
         recipe_list = recommended_recipes[['RecipeName', 'TotalTimeInMins', 'Diet', 'TranslatedInstructions']].to_dict('records')
 
-# Pick 7 random recipes
+        # Pick 7 random recipes
         recommended_recipes = random.sample(recipe_list, 7)
         
         print(recommended_recipes)
@@ -384,13 +384,85 @@ API_KEY= '80f8317fe9164e8a9951298d3009ff2e'
 from django.views.decorators.csrf import csrf_exempt
 import requests
 from django.http import JsonResponse
+cache = {}
+import time
+ 
+# def get_ingredient_substitutes(ingredient_name):
+#     url = f"https://api.spoonacular.com/food/ingredients/substitutes?ingredientName={ingredient_name}&apiKey={API_KEY}"
+#     response = requests.get(url)
+#     if response.status_code == 200:
+#         return response.json()
+#     return {"error": "Failed to fetch substitutes"}
+
 
 def get_ingredient_substitutes(ingredient_name):
+    """Fetch substitutes for a given ingredient using Spoonacular API."""
+    if ingredient_name in cache:
+        print(f"🔁 Using cached substitutes for '{ingredient_name}'")
+        return cache[ingredient_name]
+
+    print(f"📦 Fetching substitutes for '{ingredient_name}'")
     url = f"https://api.spoonacular.com/food/ingredients/substitutes?ingredientName={ingredient_name}&apiKey={API_KEY}"
     response = requests.get(url)
+
     if response.status_code == 200:
-        return response.json()
-    return {"error": "Failed to fetch substitutes"}
+        data = response.json()
+        cache[ingredient_name] = data
+        return data
+    else:
+        return {"error": f"Failed to fetch substitutes: {response.status_code}"}
+
+def get_recipes_with_ingredient(ingredient):
+    """Fetch recipes using the substitute ingredient with detailed info."""
+    if ingredient in cache:
+        print(f"🔁 Using cached recipes for '{ingredient}'")
+        return cache[ingredient]
+
+    print(f"🍽️  Fetching recipes with '{ingredient}'")
+    url = f"https://api.spoonacular.com/recipes/complexSearch?includeIngredients={ingredient}&addRecipeInformation=true&number=5&apiKey={API_KEY}"
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        data = response.json()
+        cache[ingredient] = data
+        return data
+    else:
+        return {"error": f"Failed to fetch recipes: {response.status_code}"}
+
+def find_recipes_with_substitutes(original_ingredient):
+    substitutes_data = get_ingredient_substitutes(original_ingredient)
+
+    if "substitutes" not in substitutes_data:
+        print("❌ No substitutes found.")
+        return
+
+    for substitute in substitutes_data["substitutes"]:
+        recipes = get_recipes_with_ingredient(substitute)
+        
+        print(f"\n📌 Recipes using '{substitute}' instead of '{original_ingredient}':\n")
+        
+        if "results" in recipes:
+            for recipe in recipes["results"]:
+                print(f"🍲 {recipe['title']}")
+                print(f"   Ready in {recipe['readyInMinutes']} minutes | Servings: {recipe['servings']}")
+
+                # 📝 Print instructions if available
+                instructions = recipe.get("analyzedInstructions", [])
+                if instructions and instructions[0].get("steps"):
+                    print("   📖 Instructions:")
+                    for step in instructions[0]["steps"]:
+                        print(f"     {step['number']}. {step['step']}")
+                else:
+                    print("   ⚠️ Instructions not available in API response.")
+
+                print()  # extra line
+        else:
+            print("⚠️ No recipes found.\n")
+
+        time.sleep(1)
+
+# Example run
+find_recipes_with_substitutes("butter")
 
 
 @csrf_exempt

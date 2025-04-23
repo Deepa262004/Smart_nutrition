@@ -125,7 +125,7 @@ const MealRecommendation = () => {
         />
         <TextInput
           style={styles.input}
-          placeholder="Your Health condition (diabetes, cardiovascular, none)"
+          placeholder="Any Health conditions (diabetes, cardiovascular, none)"
           placeholderTextColor="#777"
           value={formData.health_condition_preferences}
           onChangeText={(text) => handleChange("health_condition_preferences", text)}

@@ -101,19 +101,19 @@ const Profile = () => {
           <Text style={styles.nutritionItem}>Fat: {calculatedData.fat || "N/A"}g</Text>
         </View>
       </View>
-
-      <View>
-        <Text style={styles.mealItem}>
-          🍲 Breakfast: {userData.breakfast?.RecipeName || "Not recorded"}
-        </Text>
-        <Text style={styles.mealItem}>
-          🥗 Lunch: {userData.lunch?.RecipeName || "Not recorded"}
-        </Text>
-        <Text style={styles.mealItem}>
-          🍎 Dinner: {userData.dinner?.RecipeName || "Not recorded"}
-        </Text>
-      </View>
-
+<View>
+      {/* Meal History */}
+      <Text style={styles.mealItem}>
+  🍲 Breakfast: {userData.breakfast?.RecipeName || "Not recorded"}
+</Text>
+<Text style={styles.mealItem}>
+  🥗 Lunch: {userData.lunch?.RecipeName || "Not recorded"}
+</Text>
+<Text style={styles.mealItem}>
+  🍎 Dinner: {userData.dinner?.RecipeName || "Not recorded"}
+</Text>
+</View>
+      {/* Edit Profile Button */}
       <TouchableOpacity
         style={styles.editButton}
         onPress={() => router.push("/auth/editprofile")}
