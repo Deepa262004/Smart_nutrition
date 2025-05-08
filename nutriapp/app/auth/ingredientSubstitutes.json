@@ -1,0 +1,81 @@
+{
+    "milk": ["almond milk", "soy milk", "oat milk", "coconut milk", "diluted cashew paste"],
+    "butter": ["margarine", "coconut oil", "olive oil", "ghee"],
+    "egg": ["chia seeds (1 tbsp + 3 tbsp water)", "flaxseed (1 tbsp + 3 tbsp water)", "unsweetened applesauce (1/4 cup)", "mashed banana (1/4 cup)"],
+    "sugar": ["jaggery", "honey", "maple syrup", "stevia", "agave nectar"],
+    "flour": ["almond flour", "coconut flour", "oat flour", "whole wheat flour"],
+    "maida": ["whole wheat flour", "multigrain flour", "chickpea flour (for pakoras)", "semolina (for crispiness)"],
+    "all purpose": ["whole wheat flour", "multigrain flour", "chickpea flour (for pakoras)", "semolina (for crispiness)"],
+    "baking powder": ["1/4 tsp baking soda + 1/2 tsp cream of tartar"],
+    "soy sauce": ["tamari", "coconut aminos", "Worcestershire sauce", "Maggi seasoning"],
+    "lemon juice": ["lime juice", "white vinegar", "apple cider vinegar", "tamarind pulp (for Indian curries)"],
+    "vinegar": ["lemon juice", "lime juice", "tamarind water"],
+    "cream": ["evaporated milk", "Greek yogurt", "coconut cream", "malai (milk skin)"],
+    "whipping cream": ["malai blended with milk", "chilled coconut cream", "hung curd (for savory dishes)"],
+    "cornstarch": ["arrowroot powder", "tapioca starch", "rice flour", "gram flour (besan)"],
+    "mayonnaise": ["1 egg+salt a pinch+oil 1tsp(3-4 tablespoons of mayonnaise)", "mashed avocado", "hung curd", "hummus"],
+    "buttermilk": ["1 cup milk + 1 tbsp vinegar/lemon juice (sit 10 mins)", "diluted curd (1/2 cup curd + 1/2 cup water)"],
+    "tomato sauce": ["tomato puree + pinch of sugar + pinch of salt", "tomato paste + water + sugar", "ketchup (in small amounts)"],
+    "onion": ["leek", "shallots", "onion powder", "spring onions"],
+    "garlic": ["garlic powder", "shallots", "chives", "hing (asafoetida, for Indian dishes)"],
+    "chili powder": ["paprika + cumin", "cayenne pepper", "red chili powder", "hot sauce"],
+    "chili flakes": [
+      "dry roast whole red chilies and crush coarsely (homemade chili flakes)",
+      "crushed Kashmiri red chili (for color and mild heat)",
+      "red chili powder (use sparingly as it's finer and hotter)",
+      "green chili paste (for fresh recipes)"
+    ],
+    "oil": ["butter", "ghee", "applesauce (for baking)", "Greek yogurt"],
+    "cheese": ["nutritional yeast", "vegan cheese", "cottage cheese (paneer)"],
+    "oregano": [
+      "ajwain (carom seeds, for Indian curries)",
+      "dried basil + dried thyme (1:1 mix)",
+      "dried marjoram",
+      "pizza masala"
+    ],
+        "sour cream": [
+          "hung curd",
+          "buttermilk",
+          "blended cottage cheese (paneer)",
+          "cream cheese thinned with milk"
+        ],
+        "hung curd": [
+          "Greek yogurt",
+          "strained regular curd",
+          "labneh",
+          "thick sour yogurt",
+          "blended silken tofu (for vegan option)"
+        ],
+        "coriander powder": [
+    "ground cumin (in lesser amount)",
+    "fresh coriander (for garnishing only)",
+    "curry powder (may alter taste slightly)",
+    "caraway seeds (lightly crushed, use sparingly)"
+  ],
+  "garam masala": [
+    "curry powder (adjust for sweetness/spice)",
+    "homemade mix (equal parts cumin, coriander, cinnamon, cloves, cardamom)",
+    "chana masala powder (in Indian dishes)",
+    "tandoori masala (for smoky flavor)"],
+
+    "curd":["Greek yogurt",
+    "buttermilk",
+    "hung curd",
+    "blended silken tofu (for vegan option)",
+    "coconut yogurt"],
+    "jowar flour":[
+        "Bajra flour (Pearl millet flour)",
+    "Ragi flour (Finger millet flour)",
+    "Whole wheat flour",
+    "Rice flour",
+    "Corn flour (Maize flour)",
+    "Besan (Chickpea flour)",
+    "Oat flour",
+    "Quinoa flour",
+    "Buckwheat flour",
+    "Barley flour"
+    ], 
+"ghee":[]
+      }
+      
+  

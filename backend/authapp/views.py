@@ -202,7 +202,7 @@ def predict_diet(request):
                 ]
 
         # Select top 12 recommendations
-        recipe_list = recommended_recipes[['RecipeName', 'TotalTimeInMins', 'Diet', 'TranslatedInstructions']].to_dict('records')
+        recipe_list = recommended_recipes[['RecipeName', 'TotalTimeInMins', 'Ingredients','Diet', 'TranslatedInstructions']].to_dict('records')
 
         # Pick 7 random recipes
         recommended_recipes = random.sample(recipe_list, 7)
@@ -394,7 +394,6 @@ import time
 #         return response.json()
 #     return {"error": "Failed to fetch substitutes"}
 
-
 def get_ingredient_substitutes(ingredient_name):
     """Fetch substitutes for a given ingredient using Spoonacular API."""
     if ingredient_name in cache:
@@ -412,57 +411,57 @@ def get_ingredient_substitutes(ingredient_name):
     else:
         return {"error": f"Failed to fetch substitutes: {response.status_code}"}
 
-def get_recipes_with_ingredient(ingredient):
-    """Fetch recipes using the substitute ingredient with detailed info."""
-    if ingredient in cache:
-        print(f"🔁 Using cached recipes for '{ingredient}'")
-        return cache[ingredient]
+# def get_recipes_with_ingredient(ingredient):
+#     """Fetch recipes using the substitute ingredient with detailed info."""
+#     if ingredient in cache:
+#         print(f"🔁 Using cached recipes for '{ingredient}'")
+#         return cache[ingredient]
 
-    print(f"🍽️  Fetching recipes with '{ingredient}'")
-    url = f"https://api.spoonacular.com/recipes/complexSearch?includeIngredients={ingredient}&addRecipeInformation=true&number=5&apiKey={API_KEY}"
-    response = requests.get(url)
+#     print(f"🍽️  Fetching recipes with '{ingredient}'")
+#     url = f"https://api.spoonacular.com/recipes/complexSearch?includeIngredients={ingredient}&addRecipeInformation=true&number=5&apiKey={API_KEY}"
+#     response = requests.get(url)
 
-    if response.status_code == 200:
-        data = response.json()
-        cache[ingredient] = data
-        return data
-    else:
-        return {"error": f"Failed to fetch recipes: {response.status_code}"}
+#     if response.status_code == 200:
+#         data = response.json()
+#         cache[ingredient] = data
+#         return data
+#     else:
+#         return {"error": f"Failed to fetch recipes: {response.status_code}"}
 
-def find_recipes_with_substitutes(original_ingredient):
-    substitutes_data = get_ingredient_substitutes(original_ingredient)
+# def find_recipes_with_substitutes(original_ingredient):
+#     substitutes_data = get_ingredient_substitutes(original_ingredient)
 
-    if "substitutes" not in substitutes_data:
-        print("❌ No substitutes found.")
-        return
+#     if "substitutes" not in substitutes_data:
+#         print("❌ No substitutes found.")
+#         return
 
-    for substitute in substitutes_data["substitutes"]:
-        recipes = get_recipes_with_ingredient(substitute)
+#     for substitute in substitutes_data["substitutes"]:
+#         recipes = get_recipes_with_ingredient(substitute)
         
-        print(f"\n📌 Recipes using '{substitute}' instead of '{original_ingredient}':\n")
+#         print(f"\n📌 Recipes using '{substitute}' instead of '{original_ingredient}':\n")
         
-        if "results" in recipes:
-            for recipe in recipes["results"]:
-                print(f"🍲 {recipe['title']}")
-                print(f"   Ready in {recipe['readyInMinutes']} minutes | Servings: {recipe['servings']}")
+#         if "results" in recipes:
+#             for recipe in recipes["results"]:
+#                 print(f"🍲 {recipe['title']}")
+#                 print(f"   Ready in {recipe['readyInMinutes']} minutes | Servings: {recipe['servings']}")
 
-                # 📝 Print instructions if available
-                instructions = recipe.get("analyzedInstructions", [])
-                if instructions and instructions[0].get("steps"):
-                    print("   📖 Instructions:")
-                    for step in instructions[0]["steps"]:
-                        print(f"     {step['number']}. {step['step']}")
-                else:
-                    print("   ⚠️ Instructions not available in API response.")
+#                 # 📝 Print instructions if available
+#                 instructions = recipe.get("analyzedInstructions", [])
+#                 if instructions and instructions[0].get("steps"):
+#                     print("   📖 Instructions:")
+#                     for step in instructions[0]["steps"]:
+#                         print(f"     {step['number']}. {step['step']}")
+#                 else:
+#                     print("   ⚠️ Instructions not available in API response.")
 
-                print()  # extra line
-        else:
-            print("⚠️ No recipes found.\n")
+#                 print()  # extra line
+#         else:
+#             print("⚠️ No recipes found.\n")
 
-        time.sleep(1)
+#         time.sleep(1)
 
-# Example run
-find_recipes_with_substitutes("butter")
+# # Example run
+# find_recipes_with_substitutes("butter")
 
 
 @csrf_exempt
@@ -477,5 +476,151 @@ def ingredient_substitute_view(request):
     
     return JsonResponse({"error": "Invalid request method"}, status=405)
 
+from sentence_transformers import SentenceTransformer
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Predefined ingredient substitution data
+ingredient_subs = {
+    "milk": ["almond milk", "soy milk", "oat milk", "coconut milk", "diluted cashew paste"],
+    "butter": ["margarine", "coconut oil", "olive oil", "ghee"],
+    "egg": ["chia seeds (1 tbsp + 3 tbsp water)", "flaxseed (1 tbsp + 3 tbsp water)", "unsweetened applesauce (1/4 cup)", "mashed banana (1/4 cup)"],
+    "sugar": ["jaggery", "honey", "maple syrup", "stevia", "agave nectar"],
+    "flour": ["almond flour", "coconut flour", "oat flour", "whole wheat flour"],
+    "maida": ["whole wheat flour", "multigrain flour", "chickpea flour (for pakoras)", "semolina (for crispiness)"],
+    "all purpose flour": ["whole wheat flour", "multigrain flour", "chickpea flour (for pakoras)", "semolina (for crispiness)"],
+    "baking powder": ["1/4 tsp baking soda + 1/2 tsp cream of tartar"],
+    "soy sauce": ["tamari", "coconut aminos", "Worcestershire sauce", "Maggi seasoning"],
+    "lemon juice": ["lime juice", "white vinegar", "apple cider vinegar", "tamarind pulp (for Indian curries)"],
+    "vinegar": ["lemon juice", "lime juice", "tamarind water"],
+    "cream": ["evaporated milk", "Greek yogurt", "coconut cream", "malai (milk skin)"],
+    "whipping cream": ["malai blended with milk", "chilled coconut cream", "hung curd (for savory dishes)"],
+    "cornstarch": ["arrowroot powder", "tapioca starch", "rice flour", "gram flour (besan)"],
+    "mayonnaise": ["1 egg+salt a pinch+oil 1tsp(3-4 tablespoons of mayonnaise)", "mashed avocado", "hung curd", "hummus"],
+    "buttermilk": ["1 cup milk + 1 tbsp vinegar/lemon juice (sit 10 mins)", "diluted curd (1/2 cup curd + 1/2 cup water)"],
+    "tomato sauce": ["tomato puree + pinch of sugar + pinch of salt", "tomato paste + water + sugar", "ketchup (in small amounts)"],
+    "onion": ["leek", "shallots", "onion powder", "spring onions"],
+    "garlic": ["garlic powder", "shallots", "chives", "hing (asafoetida, for Indian dishes)"],
+    "chili powder": ["paprika + cumin", "cayenne pepper", "red chili powder", "hot sauce"],
+    "chili flakes": [
+      "dry roast whole red chilies and crush coarsely (homemade chili flakes)",
+      "crushed Kashmiri red chili (for color and mild heat)",
+      "red chili powder (use sparingly as it's finer and hotter)",
+      "green chili paste (for fresh recipes)"
+    ],
+    "oil": ["butter", "ghee", "applesauce (for baking)", "Greek yogurt"],
+    "cheese": ["nutritional yeast", "vegan cheese", "cottage cheese (paneer)"],
+    "oregano": [
+      "ajwain (carom seeds, for Indian curries)",
+      "dried basil + dried thyme (1:1 mix)",
+      "dried marjoram",
+      "pizza masala"
+    ],
+    "sour cream": [
+      "hung curd",
+      "buttermilk",
+      "blended cottage cheese (paneer)",
+      "cream cheese thinned with milk"
+    ],
+    "hung curd": [
+      "Greek yogurt",
+      "strained regular curd",
+      "labneh",
+      "thick sour yogurt",
+      "blended silken tofu (for vegan option)"
+    ],
+    "coriander powder": [
+      "ground cumin (in lesser amount)",
+      "fresh coriander (for garnishing only)",
+      "curry powder (may alter taste slightly)",
+      "caraway seeds (lightly crushed, use sparingly)"
+    ],
+    "garam masala": [
+      "curry powder (adjust for sweetness/spice)",
+      "homemade mix (equal parts cumin, coriander, cinnamon, cloves, cardamom)",
+      "chana masala powder (in Indian dishes)",
+      "tandoori masala (for smoky flavor)"
+    ],
+    "curd": [
+      "Greek yogurt",
+      "buttermilk",
+      "hung curd",
+      "blended silken tofu (for vegan option)",
+      "coconut yogurt"
+    ]
+}
+
+# # Load the SentenceTransformer model
+# import tensorflow as tf
+# import tensorflow_hub as hub
+
+# # Load the model using TensorFlow Hub (if you're using TensorFlow)
+# embed = hub.load("https://tfhub.dev/google/all-miniLM-l6-v2/2")
 
 
+# # Convert ingredients into a list of strings
+# ingredients = list(ingredient_subs.keys())
+# substitutes = [sub for subs in ingredient_subs.values() for sub in subs]
+
+# # Function to embed texts using TensorFlow Hub model
+# def get_embeddings(texts):
+#     return embed(texts).numpy()
+
+# # Embed the ingredients and their substitutes
+# ingredient_embeddings = get_embeddings(ingredients)
+# substitute_embeddings = get_embeddings(substitutes)
+
+# # Function to find the most similar ingredient substitutes
+# def find_similar_ingredients(query):
+#     # Embed the query ingredient
+#     query_embedding = get_embeddings([query])
+
+#     # Calculate cosine similarity between the query and all ingredients
+#     cosine_similarities = cosine_similarity(query_embedding, ingredient_embeddings)
+
+#     # Get the index of the most similar ingredient
+#     most_similar_idx = np.argmax(cosine_similarities)
+
+#     # Get the closest ingredient
+#     closest_ingredient = ingredients[most_similar_idx]
+
+#     # Get the corresponding substitutes for that ingredient
+#     closest_substitutes = ingredient_subs[closest_ingredient]
+
+#     return closest_ingredient, closest_substitutes
+
+@csrf_exempt
+def ingredient_substitute_views(request):
+    if request.method == 'GET':
+        # Get ingredient from the query params
+        ingredient = request.GET.get('ingredient', '').lower()
+
+        if not ingredient:
+            return JsonResponse({"error": "Ingredient is required."}, status=400)
+
+        # Find the closest ingredient and its substitutes
+        closest_ingredient, substitutes = find_similar_ingredients(ingredient)
+
+        # Return the result as JSON
+        return JsonResponse({
+            "ingredient": closest_ingredient,
+            "substitutes": substitutes
+        })
+    else:
+        return JsonResponse({"error": "Invalid HTTP method. Use GET."}, status=405)
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+
+ingredients = list(ingredient_subs.keys())
+
+vectorizer = TfidfVectorizer()
+ingredient_vectors = vectorizer.fit_transform(ingredients)
+
+def find_similar_ingredients(query):
+    query_vector = vectorizer.transform([query])
+    similarity = cosine_similarity(query_vector, ingredient_vectors).flatten()
+    idx = np.argmax(similarity)
+    closest_ingredient = ingredients[idx]
+    return closest_ingredient, ingredient_subs[closest_ingredient]
