@@ -60,7 +60,7 @@ const MealRecommendation = () => {
     const requestData = { ...userData, ...formData };
     try {
       setLoading(true);
-      const response = await axios.post("http://192.168.10.3:8001/auth/predict/", requestData);
+      const response = await axios.post("http://127.0.0.1:8001/auth/predict/", requestData);
       setMeals(response.data.recipes);
     } catch (error) {
       console.error("Error fetching meal recommendations:", error);

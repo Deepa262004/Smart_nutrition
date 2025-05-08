@@ -48,7 +48,7 @@ export default function SignUpScreen() {
         }
 
         try {
-            const response = await axios.post("http://192.168.10.3:8001/auth/signup/", {
+            const response = await axios.post("http://127.0.0.1:8001/auth/signup/", {
                 username: email.split("@")[0],
                 email,
                 password,
